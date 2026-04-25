@@ -45,6 +45,45 @@ class CityController {
     }
   };
 
+  public downloadCityQrCode = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const city = await this.cityService.getCityByIdService(id);
+      if (!city) {
+        res.sendNotFound404Response("City not found", null);
+        return;
+      }
+      if (!city.qrCode) {
+        res.sendNotFound404Response("QR code not found for this city", null);
+        return;
+      }
+
+      const qrResponse = await fetch(city.qrCode);
+      if (!qrResponse.ok) {
+        res.sendErrorResponse("Failed to fetch QR code image", null);
+        return;
+      }
+
+      const imageArrayBuffer = await qrResponse.arrayBuffer();
+      const imageBuffer = Buffer.from(imageArrayBuffer);
+      const citySlug = city.name
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=\"city-${citySlug || id}-qr.png\"`,
+      );
+      res.send(imageBuffer);
+    } catch (error) {
+      logger.error("downloadCityQrCode", error);
+      res.sendErrorResponse("Error downloading city QR code", error);
+    }
+  };
+
   public addCity = async (req: Request, res: Response) => {
     try {
       const newCity = await this.cityService.addCityService(req.body);

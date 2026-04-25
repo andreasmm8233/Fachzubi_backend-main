@@ -3,6 +3,26 @@ import { cityModel } from "../../models/index";
 import { type CityDocument } from "../../models/city";
 
 export class CityService {
+  private slugifyCity(cityName: string) {
+    return encodeURIComponent(
+      cityName
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, ""),
+    );
+  }
+
+  private buildCityQrData(cityName: string) {
+    const frontendUrl = (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
+    const citySlug = this.slugifyCity(cityName);
+    const qrTargetUrl = `${frontendUrl}/jobs/${citySlug}`;
+    const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+      qrTargetUrl,
+    )}`;
+    return { qrCode, qrTargetUrl };
+  }
+
   public async getAllCitiesService() {
     const cities = await cityModel.find();
     return cities;
@@ -51,6 +71,7 @@ export class CityService {
 
   public async addCityService(data: CityDocument) {
     const { name, startTime, endTime, address, zipCode, directionLink } = data;
+    const { qrCode, qrTargetUrl } = this.buildCityQrData(name);
     const newCity = await cityModel.create({
       name,
       startTime,
@@ -58,6 +79,8 @@ export class CityService {
       address,
       zipCode,
       directionLink,
+      qrCode,
+      qrTargetUrl,
     });
     return newCity;
   }
@@ -66,7 +89,13 @@ export class CityService {
     id: string,
     updatedData: Schema<CityDocument>,
   ) {
-    const updatedCity = await cityModel.findByIdAndUpdate(id, updatedData, {
+    const payload: any = { ...updatedData };
+    if (payload.name) {
+      const { qrCode, qrTargetUrl } = this.buildCityQrData(payload.name);
+      payload.qrCode = qrCode;
+      payload.qrTargetUrl = qrTargetUrl;
+    }
+    const updatedCity = await cityModel.findByIdAndUpdate(id, payload, {
       new: true,
     });
     return updatedCity;

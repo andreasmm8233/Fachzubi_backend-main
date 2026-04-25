@@ -9,10 +9,22 @@ const index_1 = require("../../models/index");
 const ejs_1 = __importDefault(require("ejs"));
 const path_1 = __importDefault(require("path"));
 const emailService_1 = __importDefault(require("../../utils/emailService"));
+const logger_1 = __importDefault(require("../../utils/logger"));
 class JobService {
     objectIdConverter;
     constructor() {
         this.objectIdConverter = new objectIdConvertor_1.default();
+    }
+    slugifyCity(cityName) {
+        return encodeURIComponent(cityName
+            .trim()
+            .toLowerCase()
+            .replace(/\s+/g, "-")
+            .replace(/[^a-z0-9-]/g, ""));
+    }
+    buildQrCodeImageUrl(targetUrl) {
+        const encodedTarget = encodeURIComponent(targetUrl);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedTarget}`;
     }
     async getAllJobsService(searchValue, pageNo, filter, recordPerPage, slectedCity, industry, isFrontend) {
         recordPerPage = recordPerPage ?? 10;
@@ -151,6 +163,7 @@ class JobService {
                     companyId: { $first: "$company._id" },
                     startDate: { $first: "$startDate" },
                     count: { $first: "$count" },
+                    qrCode: { $first: "$qrCode" },
                 },
             },
             {
@@ -511,6 +524,7 @@ class JobService {
                     companyImages: { $addToSet: "$companyImages" },
                     videoLink: { $first: "$videoLink" },
                     jobTypeName: { $first: "$jobTypeDetail.jobTypeName" },
+                    qrCode: { $first: "$qrCode" },
                 },
             },
         ]);
@@ -528,6 +542,22 @@ class JobService {
     }
     async addJobService(jobData) {
         const newJob = await index_1.jobModel.create({ ...jobData, status: true });
+        try {
+            const cityList = Array.isArray(jobData.city) ? jobData.city : [jobData.city];
+            const firstCity = cityList?.[0];
+            if (firstCity) {
+                const city = await index_1.cityModel.findById(firstCity).select("name");
+                const citySlug = city?.name ? this.slugifyCity(city.name) : String(firstCity);
+                const frontendUrl = (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
+                const jobUrl = `${frontendUrl}/jobs/${citySlug}`;
+                const qrCode = this.buildQrCodeImageUrl(jobUrl);
+                newJob.qrCode = qrCode;
+                await newJob.save();
+            }
+        }
+        catch (error) {
+            logger_1.default.error("addJobService-qrcode", error);
+        }
         return newJob;
     }
     async getSuggestionService(searchValue) {

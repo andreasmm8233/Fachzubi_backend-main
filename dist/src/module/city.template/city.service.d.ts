@@ -43,9 +43,9 @@ export declare class CityService {
     updateCityByIdService(id: string, updatedData: Schema<CityDocument>): Promise<(import("mongoose").Document<unknown, {}, CityDocument> & CityDocument & {
         _id: import("mongoose").Types.ObjectId;
     }) | null>;
-    deleteCityByIdService(id: string): Promise<import("mongoose").ModifyResult<import("mongoose").Document<unknown, {}, CityDocument> & CityDocument & {
+    deleteCityByIdService(id: string): Promise<(import("mongoose").Document<unknown, {}, CityDocument> & CityDocument & {
         _id: import("mongoose").Types.ObjectId;
-    }>>;
+    }) | null>;
     getAllCitiesFrontendService(): Promise<(import("mongoose").Document<unknown, {}, CityDocument> & CityDocument & {
         _id: import("mongoose").Types.ObjectId;
     })[]>;

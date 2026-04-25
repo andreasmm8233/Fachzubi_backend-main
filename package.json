@@ -7,6 +7,7 @@
     "start:dev": "tsnd --trace-warnings --respawn --transpile-only --exit-child src/index.ts",
     "start:build": "node ./dist/src/index.js",
     "build": "tsc -p .",
+    "migrate:city-qr": "ts-node src/scripts/migrate-city-qr.ts",
     "prettier:check": "prettier --check **/*.ts",
     "prettier:fix": "prettier --write **/*.ts",
     "eslint:check": "eslint **/*.ts",

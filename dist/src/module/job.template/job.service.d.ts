@@ -28,6 +28,8 @@ import { type Application } from "../../models/jobApplication";
 export declare class JobService {
     private readonly objectIdConverter;
     constructor();
+    private slugifyCity;
+    private buildQrCodeImageUrl;
     getAllJobsService(searchValue: string, pageNo: number, filter: string, recordPerPage: number, slectedCity: any, industry: string, isFrontend: string): Promise<any>;
     getCount(): Promise<number>;
     getJobByIdService(id: string): Promise<any>;

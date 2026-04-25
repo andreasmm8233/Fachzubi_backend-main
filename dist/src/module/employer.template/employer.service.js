@@ -483,6 +483,7 @@ class EmployerService {
             },
             {
                 $project: {
+                    email: 1,
                     companyName: 1,
                     address: 1,
                     zipCode: 1,

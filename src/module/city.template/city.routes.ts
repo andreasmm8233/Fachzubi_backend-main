@@ -13,6 +13,11 @@ cityRoute.get(
   authMiddleware.requireUser,
   cityController.getAllCitiesByFilter,
 );
+cityRoute.get(
+  "/:id/download-qr",
+  authMiddleware.requireUser,
+  cityController.downloadCityQrCode,
+);
 cityRoute.get("/:id", authMiddleware.requireUser, cityController.getCityById);
 cityRoute.post("/", authMiddleware.requireUser, cityController.addCity);
 cityRoute.put("/", authMiddleware.requireUser, cityController.updateCityById);

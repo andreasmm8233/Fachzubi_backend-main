@@ -9,6 +9,8 @@ export interface City {
   zipCode: string; // Make zipCode required
   directionLink: string; // Make directionLink required
   status: boolean;
+  qrCode?: string;
+  qrTargetUrl?: string;
 }
 
 export interface CityDocument extends City, Document {
@@ -26,6 +28,8 @@ const citySchema = new Schema<CityDocument>(
     zipCode: { type: String }, // Make zipCode required
     directionLink: { type: String }, // Make directionLink required
     status: { type: Boolean, required: true, default: true },
+    qrCode: { type: String, required: false },
+    qrTargetUrl: { type: String, required: false },
   },
   {
     timestamps: true,
