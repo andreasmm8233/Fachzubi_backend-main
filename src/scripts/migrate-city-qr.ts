@@ -21,9 +21,9 @@ const slugifyCity = (cityName: string) =>
       .replace(/[^a-z0-9-]/g, ""),
   );
 
-const buildCityQrData = (cityName: string) => {
+const buildCityQrData = (cityId: string, cityName: string) => {
   const citySlug = slugifyCity(cityName);
-  const qrTargetUrl = `${frontendUrl}/jobs/${citySlug}`;
+  const qrTargetUrl = `${frontendUrl}/jobs/${encodeURIComponent(cityId)}/${citySlug}`;
   const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
     qrTargetUrl,
   )}`;
@@ -62,7 +62,10 @@ const run = async () => {
 
   if (dryRun) {
     for (const city of cities) {
-      const { qrCode, qrTargetUrl } = buildCityQrData(city.name);
+      const { qrCode, qrTargetUrl } = buildCityQrData(
+        String(city._id),
+        city.name,
+      );
       console.log(
         `[DRY-RUN] ${city._id} ${city.name} -> qrTargetUrl=${qrTargetUrl} qrCode=${qrCode}`,
       );
@@ -72,7 +75,10 @@ const run = async () => {
   }
 
   const operations = cities.map((city) => {
-    const { qrCode, qrTargetUrl } = buildCityQrData(city.name);
+    const { qrCode, qrTargetUrl } = buildCityQrData(
+      String(city._id),
+      city.name,
+    );
     return {
       updateOne: {
         filter: { _id: city._id },
