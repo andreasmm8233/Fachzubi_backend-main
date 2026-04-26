@@ -8,6 +8,7 @@ import manageContentRoute from "../module/manage.contant.template/manage.content
 import smtpRoute from "../module/smtp.template/smtp.routes";
 import manageKeyRoute from "../module/manage.key.template/manageKey.route";
 import jobTypesRoute from "../module/job.type.template/job.types.route";
+import employeeRoute from "../module/manage.employee.template/manage.employee.route";
 
 const router = [
   {
@@ -46,6 +47,10 @@ const router = [
   {
     prefix: "/job-type",
     router: jobTypesRoute,
+  },
+  {
+    prefix: "/employees",
+    router: employeeRoute,
   },
 ];
 

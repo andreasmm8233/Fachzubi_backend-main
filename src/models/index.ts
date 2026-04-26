@@ -14,6 +14,8 @@ import ApplicationModel from "./jobApplication";
 import AppoinmentModel from "./appoinment";
 import JobImagesModel from "./jobImages";
 import JobTypesModel from "./jobType";
+import EmployeeModel from "./employee";
+import EmployeeSessionModel from "./employee.session";
 
 export const userSessionModel = UserSessionModel;
 export const userModel = UserModel;
@@ -31,3 +33,5 @@ export const applicationModel = ApplicationModel;
 export const appoinmentModel = AppoinmentModel;
 export const jobImagesModel = JobImagesModel;
 export const jobTypesModel = JobTypesModel;
+export const employeeModel = EmployeeModel;
+export const employeeSessionModel = EmployeeSessionModel;

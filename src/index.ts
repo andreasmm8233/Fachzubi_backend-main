@@ -7,6 +7,7 @@ import emailService from "./utils/emailService";
 import fileUpload from "express-fileupload";
 import logger from "./utils/logger";
 import setupGlobalCustomMiddleware from "./middleware";
+import AuthMiddleware from "./middleware/authenticator";
 import cors from "cors";
 dotenv.config({
   path: path.resolve(process.cwd(), ".env"),
@@ -58,6 +59,15 @@ app.use((_req, res, next) => {
 app.get("/", (_req, res) => {
   res.sendSuccess200Response("Yay!🚀", null);
 });
+
+// Permission guards — admin always passes; employees need the matching permission
+const authMiddleware = new AuthMiddleware();
+app.use("/api/v1/job", authMiddleware.requirePermission("manage_jobs"));
+app.use("/api/v1/cities", authMiddleware.requirePermission("manage_cities"));
+app.use("/api/v1/employer", authMiddleware.requirePermission("manage_employers"));
+app.use("/api/v1/industries", authMiddleware.requirePermission("manage_industries"));
+app.use("/api/v1/job-type", authMiddleware.requirePermission("job_types"));
+app.use("/api/v1/manage_content", authMiddleware.requirePermission("manage_content"));
 
 // routes
 router.forEach((route) => {

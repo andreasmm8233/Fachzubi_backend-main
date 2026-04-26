@@ -1,6 +1,7 @@
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { Response, Request } from "express";
 import { type UserDocument } from "src/models/user";
+import { type EmployeeDocument } from "src/models/employee";
 declare global {
   namespace Express {
     interface Response {
@@ -17,6 +18,7 @@ declare global {
     }
     interface Request {
       user: UserDocument;
+      employee?: EmployeeDocument;
     }
   }
 }

@@ -1,7 +1,8 @@
 import { type Request, type Response, type NextFunction } from "express";
 import JwtService from "../utils/jwt";
 import { UserService } from "../module/user.template/user.service";
-import { type JwtAccessTokenClaims } from "../module/auth.template/auth.types";
+import { employeeModel, employeeSessionModel } from "../models/index";
+import { type EmployeePermissions } from "../models/employee";
 import logger from "../utils/logger";
 
 class AuthMiddleware {
@@ -13,41 +14,80 @@ class AuthMiddleware {
 
   verifyToken = async (req: Request, _: Response, next: NextFunction) => {
     try {
-      // Check if the Authorization header is present
       const authHeader = req.headers.authorization;
       if (authHeader) {
-        // Extract the token and remove the "Bearer" prefix
         const token = authHeader.split(" ")[1];
-        // Verify the token using JwtService
-        const decodedToken = this.jwtService.verify(
-          token,
-        ) as JwtAccessTokenClaims;
-        const session = await this.userService.getUserSessionDetails({
-          _id: decodedToken.sessionId,
-          isValidSession: true,
-        });
-        if (session) {
-          const user = await this.userService.findById(session?.userId);
-          if (user) {
-            req.user = user;
+        const decodedToken = this.jwtService.verify(token) as any;
+
+        if (decodedToken.sessionId) {
+          // Admin auth path
+          const session = await this.userService.getUserSessionDetails({
+            _id: decodedToken.sessionId,
+            isValidSession: true,
+          });
+          if (session) {
+            const user = await this.userService.findById(session.userId);
+            if (user) req.user = user;
+          }
+        } else if (decodedToken.empSessionId) {
+          // Employee auth path
+          const session = await employeeSessionModel.findOne({
+            _id: decodedToken.empSessionId,
+            isValidSession: true,
+          });
+          if (session) {
+            const employee = await employeeModel.findById(session.employeeId);
+            if (employee) req.employee = employee;
           }
         }
       }
       next();
     } catch (error) {
-      // Token verification failed
       next();
       logger.error("verifyToken", error);
     }
   };
 
-  requireUser = async (req: Request, res: Response, next: NextFunction) => {
+  // Admin only — used for routes employees must never access
+  requireAdmin = async (req: Request, res: Response, next: NextFunction) => {
     if (req.user) {
       next();
     } else {
       res.sendUnauthorized401Response("Unauthorized", null);
     }
   };
+
+  // Any authenticated user (admin or employee)
+  requireUser = async (req: Request, res: Response, next: NextFunction) => {
+    if (req.user || req.employee) {
+      next();
+    } else {
+      res.sendUnauthorized401Response("Unauthorized", null);
+    }
+  };
+
+  // Admin always passes; employee must have the specified permission
+  requirePermission =
+    (permission: keyof EmployeePermissions) =>
+    async (req: Request, res: Response, next: NextFunction) => {
+      if (req.user) {
+        next();
+        return;
+      }
+      if (req.employee) {
+        if (req.employee.permissions[permission]) {
+          next();
+        } else {
+          res.sendForbidden403Response(
+            "You do not have permission to access this section",
+            null,
+          );
+        }
+        return;
+      }
+      // Not authenticated — let the route's own requireUser handle it
+      next();
+    };
 }
 
 export default AuthMiddleware;
