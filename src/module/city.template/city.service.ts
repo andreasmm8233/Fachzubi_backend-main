@@ -94,7 +94,17 @@ export class CityService {
     updatedData: Schema<CityDocument>,
   ) {
     const payload: any = { ...updatedData };
-    if (payload.name) {
+    if (payload.qrTargetUrl) {
+      const frontendUrl = (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
+      if (!frontendUrl || !payload.qrTargetUrl.startsWith(frontendUrl)) {
+        throw new Error(
+          `qrTargetUrl must start with: ${frontendUrl}`,
+        );
+      }
+      payload.qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+        payload.qrTargetUrl,
+      )}`;
+    } else if (payload.name) {
       const { qrCode, qrTargetUrl } = this.buildCityQrData(id, payload.name);
       payload.qrCode = qrCode;
       payload.qrTargetUrl = qrTargetUrl;
