@@ -32,6 +32,7 @@ export class JobService {
     slectedCity: any,
     industry: string,
     isFrontend: string,
+    creatorFilter?: { createdBy: any; createdByModel: string },
   ) {
     recordPerPage = recordPerPage ?? 10;
     recordPerPage = recordPerPage > 0 ? recordPerPage : 10;
@@ -52,7 +53,10 @@ export class JobService {
     }
     const pipeline: any = [
       {
-        $match: { isDeleted: false },
+        $match: {
+          isDeleted: false,
+          ...(creatorFilter ?? {}),
+        },
       },
       {
         $match: {
@@ -222,10 +226,10 @@ export class JobService {
     }
   }
 
-  public async getCount() {
-    const jobCount = await jobModel.find().count({
-      isDeleted: false,
-    });
+  public async getCount(creatorFilter?: { createdBy: any; createdByModel: string }) {
+    const jobCount = await jobModel
+      .find({ isDeleted: false, ...(creatorFilter ?? {}) })
+      .count();
     return jobCount;
   }
 

@@ -27,6 +27,9 @@ class JobController {
         isFillter,
         isFrontend,
       } = req.query;
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
       const jobs = await this.jobService.getAllJobsService(
         searchValue as string,
         Number(pageNo),
@@ -35,8 +38,9 @@ class JobController {
         slectedCity as string[],
         isFillter as string,
         isFrontend as string,
+        creatorFilter,
       );
-      const totalRecords = await this.jobService.getCount();
+      const totalRecords = await this.jobService.getCount(creatorFilter);
       const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
       const count = Math.ceil(totalRecords / recordPerPageValue);
       res.sendSuccess200Response("Jobs retrieved successfully", {
@@ -134,7 +138,9 @@ class JobController {
 
   public addJob = async (req: Request, res: Response) => {
     try {
-      const { _id } = req.user;
+      const creator = req.user || req.employee;
+      const _id = creator?._id;
+      const createdByModel: "User" | "Employee" = req.user ? "User" : "Employee";
       const {
         company,
         jobTitle,
@@ -188,6 +194,7 @@ class JobController {
         jobDescription,
         status,
         createdBy: _id,
+        createdByModel,
         isDeleted,
         industryName,
         videoLink,

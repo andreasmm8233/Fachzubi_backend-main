@@ -12,6 +12,7 @@ export interface Job {
   jobDescription: string;
   status: boolean;
   createdBy: Schema.Types.ObjectId;
+  createdByModel?: "User" | "Employee";
   isDeleted: boolean;
   industryName: Schema.Types.ObjectId;
   videoLink: string[];
@@ -47,7 +48,16 @@ const jobSchema = new Schema<JobDocument>(
     jobDescription: { type: String, required: true },
     status: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
-    createdBy: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+    createdByModel: {
+      type: String,
+      enum: ["User", "Employee"],
+      default: "User",
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      refPath: "createdByModel",
+    },
   },
   {
     timestamps: true,

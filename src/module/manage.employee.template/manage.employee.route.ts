@@ -23,6 +23,16 @@ employeeRoute.post(
 // Admin-only
 employeeRoute.get("/", authMiddleware.requireAdmin, employeeController.getAllEmployees);
 employeeRoute.get("/:id", authMiddleware.requireAdmin, employeeController.getEmployeeById);
+employeeRoute.get(
+  "/:id/employers",
+  authMiddleware.requireAdmin,
+  employeeController.getEmployersByEmployee,
+);
+employeeRoute.get(
+  "/:id/jobs",
+  authMiddleware.requireAdmin,
+  employeeController.getJobsByEmployee,
+);
 employeeRoute.post(
   "/",
   authMiddleware.requireAdmin,

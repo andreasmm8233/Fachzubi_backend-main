@@ -1,4 +1,9 @@
-import { employeeModel, employeeSessionModel } from "../../models/index";
+import {
+  employeeModel,
+  employeeSessionModel,
+  employerModel,
+  jobModel,
+} from "../../models/index";
 import JwtService from "../../utils/jwt";
 
 export class EmployeeService {
@@ -75,5 +80,21 @@ export class EmployeeService {
     const employeeObj = employee.toObject() as any;
     delete employeeObj.password;
     return { accessToken, refreshToken, employee: employeeObj };
+  }
+
+  public async getEmployersByEmployee(employeeId: string) {
+    return await employerModel
+      .find({ createdBy: employeeId, createdByModel: "Employee", isDeleted: false })
+      .select("companyName email contactPerson status createdAt")
+      .sort({ createdAt: -1 });
+  }
+
+  public async getJobsByEmployee(employeeId: string) {
+    return await jobModel
+      .find({ createdBy: employeeId, createdByModel: "Employee", isDeleted: false })
+      .populate("company", "companyName")
+      .populate("city", "name")
+      .select("jobTitle status startDate createdAt company city")
+      .sort({ createdAt: -1 });
   }
 }

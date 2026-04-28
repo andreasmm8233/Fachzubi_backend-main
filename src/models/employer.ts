@@ -17,6 +17,7 @@ export interface Employer {
   status?: boolean;
   isDeleted?: boolean;
   createdBy?: Schema.Types.ObjectId;
+  createdByModel?: "User" | "Employee";
 }
 
 export interface EmployerDocument extends Employer, Document {
@@ -54,7 +55,16 @@ const employerSchema = new Schema<EmployerDocument>(
     },
     status: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: true },
-    createdBy: { type: Schema.Types.ObjectId, required: true, ref: "User" },
+    createdByModel: {
+      type: String,
+      enum: ["User", "Employee"],
+      default: "User",
+    },
+    createdBy: {
+      type: Schema.Types.ObjectId,
+      required: true,
+      refPath: "createdByModel",
+    },
   },
   {
     timestamps: false,

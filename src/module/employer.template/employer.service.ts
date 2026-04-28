@@ -26,13 +26,14 @@ export class EmployerService {
     pageNo,
     filter,
     recordPerPage,
+    creatorFilter?: { createdBy: any; createdByModel: string },
   ) {
     const pipeline: any[] = [];
 
-    // Match stage
     pipeline.push({
       $match: {
         isDeleted: false,
+        ...(creatorFilter ?? {}),
       },
     });
 
@@ -137,11 +138,9 @@ export class EmployerService {
     return result[0] ? result[0].data : [];
   }
 
-  public async getCount() {
+  public async getCount(creatorFilter?: { createdBy: any; createdByModel: string }) {
     const employer = await employerModel
-      .find({
-        isDeleted: false,
-      })
+      .find({ isDeleted: false, ...(creatorFilter ?? {}) })
       .count();
     return employer;
   }

@@ -77,6 +77,28 @@ class EmployeeController {
     }
   };
 
+  public getEmployersByEmployee = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const employers = await this.employeeService.getEmployersByEmployee(id);
+      res.sendSuccess200Response("Employers retrieved successfully", employers);
+    } catch (error) {
+      logger.error("getEmployersByEmployee", error);
+      res.sendErrorResponse("Error retrieving employers", error);
+    }
+  };
+
+  public getJobsByEmployee = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const jobs = await this.employeeService.getJobsByEmployee(id);
+      res.sendSuccess200Response("Jobs retrieved successfully", jobs);
+    } catch (error) {
+      logger.error("getJobsByEmployee", error);
+      res.sendErrorResponse("Error retrieving jobs", error);
+    }
+  };
+
   public loginEmployee = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;

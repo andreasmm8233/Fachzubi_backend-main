@@ -26,13 +26,17 @@ class EmployerController {
   public getAllEmployers = async (req: Request, res: Response) => {
     try {
       const { searchValue, pageNo, filter, recordPerPage } = req.query;
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
       const employers = await this.employerService.getAllEmployersService(
         searchValue,
         pageNo,
         filter,
         recordPerPage,
+        creatorFilter,
       );
-      const totalRecords = await this.employerService.getCount();
+      const totalRecords = await this.employerService.getCount(creatorFilter);
       const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
       const count = Math.ceil(totalRecords / recordPerPageValue);
       res.sendSuccess200Response("Employers retrieved successfully", {
@@ -118,7 +122,9 @@ class EmployerController {
 
   public addEmployer = async (req: Request, res: Response) => {
     try {
-      const { _id } = req.user;
+      const creator = req.user || req.employee;
+      const _id = creator?._id;
+      const createdByModel: "User" | "Employee" = req.user ? "User" : "Employee";
       const companyImages = req.files?.["companyImages[]"];
       const {
         industryName,
@@ -163,6 +169,7 @@ class EmployerController {
         videoLink: JSON.parse(videoLink),
         status,
         createdBy: _id,
+        createdByModel,
         isDeleted: false,
         ...newPayloadCompanyLogo,
       });
