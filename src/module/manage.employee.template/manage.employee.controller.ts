@@ -99,6 +99,20 @@ class EmployeeController {
     }
   };
 
+  public getJobsByEmployeeAndEmployer = async (req: Request, res: Response) => {
+    try {
+      const { employeeId, employerId } = req.params;
+      const jobs = await this.employeeService.getJobsByEmployeeAndEmployer(
+        employeeId,
+        employerId,
+      );
+      res.sendSuccess200Response("Jobs retrieved successfully", jobs);
+    } catch (error) {
+      logger.error("getJobsByEmployeeAndEmployer", error);
+      res.sendErrorResponse("Error retrieving jobs", error);
+    }
+  };
+
   public loginEmployee = async (req: Request, res: Response) => {
     try {
       const { email, password } = req.body;

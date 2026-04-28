@@ -1,8 +1,13 @@
+import mongoose from "mongoose";
 import {
+  cityModel,
+  companyImageModel,
   employeeModel,
   employeeSessionModel,
   employerModel,
+  industriesModel,
   jobModel,
+  mediaModel,
 } from "../../models/index";
 import JwtService from "../../utils/jwt";
 
@@ -83,10 +88,106 @@ export class EmployeeService {
   }
 
   public async getEmployersByEmployee(employeeId: string) {
-    return await employerModel
-      .find({ createdBy: employeeId, createdByModel: "Employee", isDeleted: false })
-      .select("companyName email contactPerson status createdAt")
-      .sort({ createdAt: -1 });
+    return await employerModel.aggregate([
+      {
+        $match: {
+          createdBy: new mongoose.Types.ObjectId(employeeId),
+          createdByModel: "Employee",
+          isDeleted: false,
+        },
+      },
+      // Company logo
+      {
+        $lookup: {
+          from: mediaModel.collection.name,
+          let: { logoId: "$companyLogo" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$logoId"] } } },
+            { $project: { filepath: 1 } },
+          ],
+          as: "companyLogo",
+        },
+      },
+      { $unwind: { path: "$companyLogo", preserveNullAndEmptyArrays: true } },
+      // Industry
+      {
+        $lookup: {
+          from: industriesModel.collection.name,
+          let: { industryId: "$industryName" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$industryId"] } } },
+            { $project: { industryName: 1 } },
+          ],
+          as: "industryName",
+        },
+      },
+      { $unwind: { path: "$industryName", preserveNullAndEmptyArrays: true } },
+      // City
+      {
+        $lookup: {
+          from: cityModel.collection.name,
+          let: { cityId: "$city" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$_id", "$$cityId"] } } },
+            { $project: { name: 1, address: 1 } },
+          ],
+          as: "city",
+        },
+      },
+      { $unwind: { path: "$city", preserveNullAndEmptyArrays: true } },
+      // Company images
+      {
+        $lookup: {
+          from: companyImageModel.collection.name,
+          let: { companyId: "$_id" },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$companyId", "$$companyId"] } } },
+            {
+              $lookup: {
+                from: mediaModel.collection.name,
+                let: { documentId: "$imageId" },
+                pipeline: [
+                  { $match: { $expr: { $eq: ["$_id", "$$documentId"] } } },
+                  { $project: { createdAt: 0, updatedAt: 0, __v: 0 } },
+                ],
+                as: "companyImages",
+              },
+            },
+            { $unwind: { path: "$companyImages", preserveNullAndEmptyArrays: true } },
+            { $project: { companyImages: 1 } },
+          ],
+          as: "companyImages",
+        },
+      },
+      {
+        $project: {
+          companyName: 1,
+          email: 1,
+          contactPerson: 1,
+          jobTitle: 1,
+          phoneNo: 1,
+          address: 1,
+          zipCode: 1,
+          website: 1,
+          companyDescription: 1,
+          videoLink: 1,
+          status: 1,
+          createdAt: 1,
+          industryName: "$industryName.industryName",
+          city: "$city.name",
+          cityAddress: "$city.address",
+          companyLogo: "$companyLogo.filepath",
+          companyImages: {
+            $map: {
+              input: "$companyImages",
+              as: "img",
+              in: "$$img.companyImages.filepath",
+            },
+          },
+        },
+      },
+      { $sort: { createdAt: -1 } },
+    ]);
   }
 
   public async getJobsByEmployee(employeeId: string) {
@@ -94,7 +195,29 @@ export class EmployeeService {
       .find({ createdBy: employeeId, createdByModel: "Employee", isDeleted: false })
       .populate("company", "companyName")
       .populate("city", "name")
-      .select("jobTitle status startDate createdAt company city")
+      .populate("industryName", "industryName")
+      .select("jobTitle status startDate createdAt company city industryName")
+      .sort({ createdAt: -1 });
+  }
+
+  public async getJobsByEmployeeAndEmployer(
+    employeeId: string,
+    employerId: string,
+  ) {
+    return await jobModel
+      .find({
+        createdBy: employeeId,
+        createdByModel: "Employee",
+        company: employerId,
+        isDeleted: false,
+      })
+      .populate("company", "companyName email phoneNo")
+      .populate("city", "name")
+      .populate("industryName", "industryName")
+      .populate("jobType", "jobTypeName")
+      .select(
+        "jobTitle email status startDate createdAt city industryName jobDescription jobType company",
+      )
       .sort({ createdAt: -1 });
   }
 }
