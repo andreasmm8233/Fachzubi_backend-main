@@ -6,29 +6,27 @@ import logger from "./logger";
 export class FileHandler {
   public async saveFileAndCreateMedia(file: any): Promise<string | null> {
     try {
-      // Ensure file.data is a Buffer
       if (!Buffer.isBuffer(file.data)) {
         throw new Error("Invalid buffer type");
       }
 
-      // Generate a unique file name using the current timestamp
       const actualFileName = file.name;
-      const fileName = Date.now() + "-" + file.name;
-      const filePath = path.join("public", fileName).replace(/\\/g, "/");
-      await fs.mkdir(path.join(__dirname, "../../public"), { recursive: true });
-      // Save the file to the 'public' folder
-      await fs.writeFile(filePath, file.data);
+      const fileName = `${Date.now()}-${file.name}`;
 
-      // Create a media document in your MongoDB collection
-      const fileType = file.mimetype;
+      // Use process.cwd() so mkdir and writeFile always point to the same directory
+      const publicDir = path.join(process.cwd(), "public");
+      const absoluteFilePath = path.join(publicDir, fileName);
+
+      await fs.mkdir(publicDir, { recursive: true });
+      await fs.writeFile(absoluteFilePath, file.data);
+
       const mediaData: Media = {
-        type: fileType,
-        fileName:actualFileName,
-        filepath: filePath.replace(/^public\//, ""),
+        type: file.mimetype,
+        fileName: actualFileName,
+        filepath: fileName, // stored as filename only; served via express.static("/public")
       };
       const createdMedia = await mediaModel.create(mediaData);
 
-      // Return the ID of the created media document
       return createdMedia._id;
     } catch (error) {
       logger.error("saveFileAndCreateMedia", error);
