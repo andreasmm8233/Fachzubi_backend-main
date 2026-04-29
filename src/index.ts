@@ -26,7 +26,8 @@ db.connect();
 
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 app.use(express.static(path.join(process.cwd(), "public")));
 
 const corsOptions = {
@@ -41,7 +42,12 @@ app.use(cors(corsOptions));
 setupGlobalCustomMiddleware(app);
 
 // Middleware to parse form data with express-fileupload
-app.use(fileUpload());
+app.use(
+  fileUpload({
+    limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB per file
+    abortOnLimit: true,
+  }),
+);
 
 app.use((_req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
