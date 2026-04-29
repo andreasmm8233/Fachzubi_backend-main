@@ -22,10 +22,10 @@ export class EmployerService {
   }
 
   public async getAllEmployersService(
-    searchValue,
-    pageNo,
-    filter,
-    recordPerPage,
+    searchValue: any,
+    pageNo: any,
+    filter: any,
+    recordPerPage: any,
     creatorFilter?: { createdBy: any; createdByModel: string },
   ) {
     const pipeline: any[] = [];
@@ -225,15 +225,19 @@ export class EmployerService {
     return newEmployer;
   }
 
-  public async getCompanyByCity(cityId: string) {
+  public async getCompanyByCity(
+    cityId: string,
+    creatorFilter?: { createdBy: any; createdByModel: string },
+  ) {
     const cityIdsArray = cityId.split(",");
     const objectIdCityIds = cityIdsArray.map((id) =>
       this.objectIdConverter.convertToObjectId(id),
     );
     const employers = await employerModel
       .find({
-        city: { $in: objectIdCityIds.length ? objectIdCityIds : cityId }, // Use $in to match any of the values in the array
+        city: { $in: objectIdCityIds.length ? objectIdCityIds : cityId },
         isDeleted: false,
+        ...(creatorFilter ?? {}),
       })
       .select("companyName");
     return employers;
@@ -287,7 +291,7 @@ export class EmployerService {
   public async getAllEmployersForFrontendService(
     paylaod: EmployerBodyPaylaodFrontend,
   ) {
-    const filterQuery = {};
+    const filterQuery: Record<string, any> = {};
     const skip = paylaod.skip ?? 0;
     if (paylaod.slectedCity) {
       if (typeof paylaod.slectedCity === "string") {

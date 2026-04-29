@@ -193,7 +193,10 @@ class EmployerController {
   ) => {
     const { city } = req.params;
     try {
-      const data = await this.employerService.getCompanyByCity(city);
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
+      const data = await this.employerService.getCompanyByCity(city, creatorFilter);
       res.sendSuccess200Response(" success", data);
     } catch (error) {
       res.sendErrorResponse("failed", error);

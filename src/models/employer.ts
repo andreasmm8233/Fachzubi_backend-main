@@ -67,7 +67,7 @@ const employerSchema = new Schema<EmployerDocument>(
     },
   },
   {
-    timestamps: false,
+    timestamps: true,
   },
 );
 
