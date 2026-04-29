@@ -154,7 +154,7 @@ export class EmployerService {
       .populate("city", "name")
       .populate({
         path: "companyLogo",
-        select: "_id",
+        select: "_id filepath",
       })
       .select("-industryName -city");
     if (employerDetail) {
