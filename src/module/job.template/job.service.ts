@@ -33,10 +33,11 @@ export class JobService {
     industry: string,
     isFrontend: string,
     creatorFilter?: { createdBy: any; createdByModel: string },
+    letter?: string,
   ) {
     recordPerPage = recordPerPage ?? 10;
     recordPerPage = recordPerPage > 0 ? recordPerPage : 10;
-    const filterQuery = {};
+    const filterQuery: Record<string, any> = {};
     if (industry) {
       filterQuery["industryName"] =
         this.objectIdConverter.convertToObjectId(industry);
@@ -210,20 +211,32 @@ export class JobService {
           ],
         },
       },
-      {
-        $skip: isFrontend ? 0 : (pageNo - 1) * recordPerPage || 0,
+      letter && {
+        $match: {
+          jobTitle: { $regex: new RegExp(`^${letter}`, "i") },
+        },
       },
       {
-        $limit: isFrontend ? pageNo * recordPerPage : recordPerPage || 0,
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [
+            { $skip: isFrontend ? 0 : (pageNo - 1) * recordPerPage || 0 },
+            { $limit: (isFrontend ? pageNo * recordPerPage : recordPerPage) || 10 },
+          ],
+        },
       },
     ].filter(Boolean);
 
-    try {
-      const result = await jobModel.aggregate(pipeline).exec();
-      return result;
-    } catch (error) {
-      return error; // Rethrow the error to propagate it up the stack
-    }
+    const result = await jobModel.aggregate(pipeline).exec();
+    const total = result[0]?.metadata[0]?.total ?? 0;
+    const limit = recordPerPage || 10;
+    return {
+      data: result[0]?.data ?? [],
+      total,
+      pageNo: pageNo || 1,
+      recordPerPage: limit,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   public async getCount(creatorFilter?: { createdBy: any; createdByModel: string }) {

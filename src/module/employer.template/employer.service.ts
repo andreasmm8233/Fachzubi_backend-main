@@ -6,6 +6,7 @@ import {
   employerModel,
   industriesModel,
   jobModel,
+  jobTypesModel,
   mediaModel,
   userModel,
 } from "../../models";
@@ -292,7 +293,9 @@ export class EmployerService {
     paylaod: EmployerBodyPaylaodFrontend,
   ) {
     const filterQuery: Record<string, any> = {};
-    const skip = paylaod.skip ?? 0;
+    const recordPerPage = Number(paylaod.recordPerPage) > 0 ? Number(paylaod.recordPerPage) : 10;
+    const pageNo = Number(paylaod.pageNo) > 0 ? Number(paylaod.pageNo) : 1;
+    const skip = (pageNo - 1) * recordPerPage;
     if (paylaod.slectedCity) {
       if (typeof paylaod.slectedCity === "string") {
         paylaod.slectedCity = [paylaod.slectedCity];
@@ -386,20 +389,33 @@ export class EmployerService {
         },
       },
       {
-        $skip: Number(skip),
-      },
-      {
-        $limit: 10,
-      },
-      {
         $project: {
           industryName: "$industryName.industryName",
           companyName: 1,
-          companyLogo: "$companyLogo.filepath",
+          companyLogo: {
+            $cond: {
+              if: "$companyLogo",
+              then: { _id: "$companyLogo._id", filepath: "$companyLogo.filepath" },
+              else: null,
+            },
+          },
+        },
+      },
+      {
+        $facet: {
+          metadata: [{ $count: "total" }],
+          data: [{ $skip: skip }, { $limit: recordPerPage }],
         },
       },
     ]);
-    return EmpList;
+    const total = EmpList[0]?.metadata[0]?.total ?? 0;
+    return {
+      data: EmpList[0]?.data ?? [],
+      total,
+      pageNo,
+      recordPerPage,
+      totalPages: Math.ceil(total / recordPerPage),
+    };
   }
 
   public async getCompanyDetailService(companyId: string) {
@@ -540,6 +556,56 @@ export class EmployerService {
           as: "companyImages",
         },
       },
+      // Jobs for this company
+      {
+        $lookup: {
+          from: jobModel.collection.name,
+          let: { companyId: "$_id" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$company", "$$companyId"] },
+                isDeleted: false,
+                status: true,
+              },
+            },
+            {
+              $lookup: {
+                from: jobTypesModel.collection.name,
+                localField: "jobType",
+                foreignField: "_id",
+                as: "jobTypeDetail",
+              },
+            },
+            { $unwind: { path: "$jobTypeDetail", preserveNullAndEmptyArrays: true } },
+            {
+              $lookup: {
+                from: cityModel.collection.name,
+                localField: "city",
+                foreignField: "_id",
+                as: "cityDetail",
+              },
+            },
+            {
+              $project: {
+                _id: 1,
+                jobTitle: 1,
+                startDate: 1,
+                status: 1,
+                jobDescription: 1,
+                address: 1,
+                zipCode: 1,
+                email: 1,
+                jobType: "$jobTypeDetail.jobTypeName",
+                city: "$cityDetail.name",
+                createdAt: 1,
+              },
+            },
+            { $sort: { createdAt: -1 } },
+          ],
+          as: "jobs",
+        },
+      },
       {
         $project: {
           email: 1,
@@ -548,11 +614,18 @@ export class EmployerService {
           zipCode: 1,
           industryName: "$industryName.industryName",
           contactPerson: 1,
-          companyLogo: "$companyLogo.filepath",
+          companyLogo: {
+            $cond: {
+              if: "$companyLogo",
+              then: { _id: "$companyLogo._id", filepath: "$companyLogo.filepath" },
+              else: null,
+            },
+          },
           companyDescription: 1,
           videoLink: 1,
           website: 1,
           phoneNo: 1,
+          jobs: 1,
           companyImages: {
             $map: {
               input: "$companyImages",

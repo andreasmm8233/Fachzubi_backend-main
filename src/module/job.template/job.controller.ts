@@ -26,11 +26,12 @@ class JobController {
         slectedCity,
         isFillter,
         isFrontend,
+        letter,
       } = req.query;
       const creatorFilter = req.employee
         ? { createdBy: req.employee._id, createdByModel: "Employee" }
         : undefined;
-      const jobs = await this.jobService.getAllJobsService(
+      const result = await this.jobService.getAllJobsService(
         searchValue as string,
         Number(pageNo),
         filter as string,
@@ -39,14 +40,9 @@ class JobController {
         isFillter as string,
         isFrontend as string,
         creatorFilter,
+        letter as string,
       );
-      const totalRecords = await this.jobService.getCount(creatorFilter);
-      const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
-      const count = Math.ceil(totalRecords / recordPerPageValue);
-      res.sendSuccess200Response("Jobs retrieved successfully", {
-        jobs,
-        count,
-      });
+      res.sendSuccess200Response("Jobs retrieved successfully", result);
     } catch (error) {
       logger.error("getAllJobs", error);
       res.sendErrorResponse("Error retrieving jobs", error);

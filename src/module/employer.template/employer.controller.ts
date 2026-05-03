@@ -75,9 +75,28 @@ class EmployerController {
       const companyImages = req.files?.companyImages;
       const { id } = req.params;
       if (req.body.companyLogo) {
-        req.body.companyLogo = this.objectIdConverter.convertToObjectId(
-          req.body.companyLogo,
-        );
+        const raw = req.body.companyLogo;
+        let logoId: string | undefined;
+        if (typeof raw === "object" && raw !== null) {
+          // { _id, filepath } object sent back from frontend
+          logoId = raw._id ? String(raw._id) : undefined;
+        } else if (typeof raw === "string" && raw.startsWith("{")) {
+          // JSON-stringified object from form-data
+          try {
+            const parsed = JSON.parse(raw);
+            logoId = parsed?._id ? String(parsed._id) : undefined;
+          } catch {
+            logoId = raw;
+          }
+        } else {
+          logoId = raw;
+        }
+        // Only pass to convertToObjectId if it's a valid 24-hex ObjectId string
+        if (logoId && /^[a-fA-F0-9]{24}$/.test(logoId)) {
+          req.body.companyLogo = this.objectIdConverter.convertToObjectId(logoId);
+        } else {
+          delete req.body.companyLogo;
+        }
       }
       if (req?.files?.companyLogo) {
         const mediaId = await this.fileHandler.saveFileAndCreateMedia(
@@ -222,9 +241,11 @@ class EmployerController {
         isFillter,
         slectedCity,
         skip,
+        pageNo,
+        recordPerPage,
       }: EmployerBodyPaylaodFrontend = <any>req.query;
       const data = await this.employerService.getAllEmployersForFrontendService(
-        { searchValue, isFillter, slectedCity, skip },
+        { searchValue, isFillter, slectedCity, skip, pageNo, recordPerPage },
       );
       res.sendSuccess200Response(" success", data);
     } catch (error) {
