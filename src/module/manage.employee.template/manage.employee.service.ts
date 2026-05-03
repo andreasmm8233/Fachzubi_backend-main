@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import bcrypt from "bcrypt";
 import {
   cityModel,
   companyImageModel,
@@ -28,6 +29,7 @@ export class EmployeeService {
   public async createEmployee(data: Record<string, any>) {
     const employeeData = { ...data };
     delete employeeData.confirm_password;
+    employeeData.plainPassword = employeeData.password;
     const existing = await employeeModel.findOne({
       email: employeeData.email,
       isDeleted: false,
@@ -42,11 +44,18 @@ export class EmployeeService {
   public async updateEmployee(id: string, data: Record<string, any>) {
     const updateData = { ...data };
     delete updateData.id;
-    delete updateData.password;
     delete updateData.confirm_password;
-    return await employeeModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .select("-password");
+    if (updateData.password) {
+      updateData.plainPassword = updateData.password;
+      updateData.password = await bcrypt.hash(updateData.password, 10);
+    } else {
+      delete updateData.password;
+    }
+    const employee = await employeeModel.findByIdAndUpdate(id, updateData, { new: true });
+    if (!employee) return null;
+    const result = employee.toObject() as any;
+    delete result.password;
+    return result;
   }
 
   public async deleteEmployee(id: string) {

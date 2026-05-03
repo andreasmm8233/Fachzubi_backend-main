@@ -27,6 +27,7 @@ export const updateEmployeeValidator = Joi.object({
   last_name: Joi.string(),
   email: Joi.string().email(),
   isActive: Joi.boolean(),
+  password: Joi.string().min(8),
   permissions: permissionsSchema,
 });
 

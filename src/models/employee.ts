@@ -15,6 +15,7 @@ export interface Employee {
   last_name: string;
   email: string;
   password: string;
+  plainPassword?: string;
   isActive: boolean;
   isDeleted: boolean;
   permissions: EmployeePermissions;
@@ -33,6 +34,7 @@ const employeeSchema = new Schema<EmployeeDocument>(
     last_name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    plainPassword: { type: String, required: false },
     isActive: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
     permissions: {
