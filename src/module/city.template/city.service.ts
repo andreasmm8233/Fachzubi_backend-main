@@ -3,24 +3,8 @@ import { cityModel } from "../../models/index";
 import { type CityDocument } from "../../models/city";
 
 export class CityService {
-  private slugifyCity(cityName: string) {
-    return encodeURIComponent(
-      cityName
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, "-")
-        .replace(/[^a-z0-9-]/g, ""),
-    );
-  }
-
-  private buildCityQrData(cityId: string, cityName: string) {
-    const frontendUrl = (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
-    const citySlug = this.slugifyCity(cityName);
-    const qrTargetUrl = `${frontendUrl}/jobs/${encodeURIComponent(cityId)}/${citySlug}`;
-    const qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-      qrTargetUrl,
-    )}`;
-    return { qrCode, qrTargetUrl };
+  private buildQrCode(qrTargetUrl: string) {
+    return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrTargetUrl)}`;
   }
 
   public async getAllCitiesService() {
@@ -79,12 +63,11 @@ export class CityService {
       zipCode,
       directionLink,
     });
-    const { qrCode, qrTargetUrl } = this.buildCityQrData(
-      String(newCity._id),
-      newCity.name,
-    );
-    newCity.qrCode = qrCode;
-    newCity.qrTargetUrl = qrTargetUrl;
+    const providedUrl = (data as any).qrTargetUrl;
+    if (providedUrl) {
+      newCity.qrTargetUrl = providedUrl;
+      newCity.qrCode = this.buildQrCode(providedUrl);
+    }
     await newCity.save();
     return newCity;
   }
@@ -95,19 +78,7 @@ export class CityService {
   ) {
     const payload: any = { ...updatedData };
     if (payload.qrTargetUrl) {
-      const frontendUrl = (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
-      if (!frontendUrl || !payload.qrTargetUrl.startsWith(frontendUrl)) {
-        throw new Error(
-          `qrTargetUrl must start with: ${frontendUrl}`,
-        );
-      }
-      payload.qrCode = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
-        payload.qrTargetUrl,
-      )}`;
-    } else if (payload.name) {
-      const { qrCode, qrTargetUrl } = this.buildCityQrData(id, payload.name);
-      payload.qrCode = qrCode;
-      payload.qrTargetUrl = qrTargetUrl;
+      payload.qrCode = this.buildQrCode(payload.qrTargetUrl);
     }
     const updatedCity = await cityModel.findByIdAndUpdate(id, payload, {
       new: true,
