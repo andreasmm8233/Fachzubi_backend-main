@@ -293,6 +293,8 @@ export class EmployerService {
     paylaod: EmployerBodyPaylaodFrontend,
   ) {
     const filterQuery: Record<string, any> = {};
+    const escapeRegex = (value: string) =>
+      value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const recordPerPage = Number(paylaod.recordPerPage) > 0 ? Number(paylaod.recordPerPage) : 10;
     const pageNo = Number(paylaod.pageNo) > 0 ? Number(paylaod.pageNo) : 1;
     const skip = (pageNo - 1) * recordPerPage;
@@ -321,6 +323,15 @@ export class EmployerService {
           },
         },
       ];
+    }
+    if (paylaod.letter) {
+      const normalizedLetter = String(paylaod.letter).trim();
+      if (normalizedLetter.length > 0) {
+        filterQuery["companyName"] = {
+          $regex: `^${escapeRegex(normalizedLetter)}`,
+          $options: "i",
+        };
+      }
     }
     const EmpList = await employerModel.aggregate([
       {

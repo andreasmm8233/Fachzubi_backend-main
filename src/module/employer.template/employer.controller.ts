@@ -239,13 +239,22 @@ class EmployerController {
       const {
         searchValue,
         isFillter,
+        letter,
         slectedCity,
         skip,
         pageNo,
         recordPerPage,
       }: EmployerBodyPaylaodFrontend = <any>req.query;
       const data = await this.employerService.getAllEmployersForFrontendService(
-        { searchValue, isFillter, slectedCity, skip, pageNo, recordPerPage },
+        {
+          searchValue,
+          isFillter,
+          letter,
+          slectedCity,
+          skip,
+          pageNo,
+          recordPerPage,
+        },
       );
       res.sendSuccess200Response(" success", data);
     } catch (error) {
