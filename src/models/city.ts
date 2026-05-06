@@ -1,16 +1,18 @@
-import { Schema, model, type Document } from "mongoose";
+import mongoose, { Schema, model, type Document } from "mongoose";
 
 export interface City {
   name: string;
   isDeleted: boolean;
-  startTime: Date; // Make startTime required
-  endTime: Date; // Make endTime required
-  address: string; // Make address required
-  zipCode: string; // Make zipCode required
-  directionLink: string; // Make directionLink required
+  startTime: Date;
+  endTime: Date;
+  address: string;
+  zipCode: string;
+  directionLink: string;
   status: boolean;
   qrCode?: string;
   qrTargetUrl?: string;
+  createdBy?: mongoose.Schema.Types.ObjectId;
+  createdByModel?: "User" | "Employee";
 }
 
 export interface CityDocument extends City, Document {
@@ -30,6 +32,16 @@ const citySchema = new Schema<CityDocument>(
     status: { type: Boolean, required: true, default: true },
     qrCode: { type: String, required: false },
     qrTargetUrl: { type: String, required: false },
+    createdByModel: {
+      type: String,
+      enum: ["User", "Employee"],
+      default: "User",
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      refPath: "createdByModel",
+    },
   },
   {
     timestamps: true,

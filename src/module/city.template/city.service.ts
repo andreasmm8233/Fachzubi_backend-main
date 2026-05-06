@@ -14,36 +14,41 @@ export class CityService {
 
   public async getAllCitiesByFilter(payload) {
     const { searchValue, pageNo, recordPerPage } = payload;
-    const query = cityModel.find({ isDeleted: false }).sort({
-      createdAt: -1,
-    });
-    // Add search functionality
+    const filter: Record<string, any> = { isDeleted: false };
     if (searchValue) {
-      void query.or([
-        {
-          name: {
-            $regex: new RegExp(searchValue, "i"),
-          },
-        },
-      ]);
+      filter.name = { $regex: new RegExp(searchValue, "i") };
     }
 
-    // Count total documents (for pagination)
-    const docs = await cityModel
-      .find({
-        isDeleted: false,
-      })
-      .count();
-
-    // Set up pagination
     const limit = parseInt(recordPerPage || "10");
-    const skip = (pageNo - 1) * limit;
+    const skip = ((parseInt(pageNo) || 1) - 1) * limit;
 
-    // Apply pagination and execute the query
-    const result = await query.limit(limit).skip(skip).exec();
+    const [docs, cities] = await Promise.all([
+      cityModel.countDocuments(filter),
+      cityModel
+        .find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate({ path: "createdBy", select: "username first_name last_name email" })
+        .lean()
+        .exec(),
+    ]);
+
+    const result = cities.map((city: any) => {
+      let creatorName: string | null = null;
+      let creatorEmail: string | null = null;
+      if (city.createdBy) {
+        creatorEmail = city.createdBy.email ?? null;
+        creatorName =
+          city.createdByModel === "Employee"
+            ? `${city.createdBy.first_name ?? ""} ${city.createdBy.last_name ?? ""}`.trim()
+            : (city.createdBy.username ?? null);
+      }
+      return { ...city, creatorName, creatorEmail };
+    });
 
     return {
-      count: Math.ceil(docs / Number(recordPerPage || 10)),
+      count: Math.ceil(docs / limit),
       result,
     };
   }
@@ -55,6 +60,7 @@ export class CityService {
 
   public async addCityService(data: CityDocument) {
     const { name, startTime, endTime, address, zipCode, directionLink } = data;
+    const extra = data as any;
     const newCity = await cityModel.create({
       name,
       startTime,
@@ -62,11 +68,12 @@ export class CityService {
       address,
       zipCode,
       directionLink,
+      createdBy: extra.createdBy,
+      createdByModel: extra.createdByModel,
     });
-    const providedUrl = (data as any).qrTargetUrl;
-    if (providedUrl) {
-      newCity.qrTargetUrl = providedUrl;
-      newCity.qrCode = this.buildQrCode(providedUrl);
+    if (extra.qrTargetUrl) {
+      newCity.qrTargetUrl = extra.qrTargetUrl;
+      newCity.qrCode = this.buildQrCode(extra.qrTargetUrl);
     }
     await newCity.save();
     return newCity;

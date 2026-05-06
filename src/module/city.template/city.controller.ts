@@ -9,7 +9,7 @@ class CityController {
     this.cityService = new CityService();
   }
 
-  public getAllCities = async (_, res: Response) => {
+  public getAllCities = async (_: Request, res: Response) => {
     try {
       const cities = await this.cityService.getAllCitiesService();
       res.sendSuccess200Response("Cities retrieved successfully", cities);
@@ -19,7 +19,7 @@ class CityController {
     }
   };
 
-  public getAllCitiesByFilter = async (req, res: Response) => {
+  public getAllCitiesByFilter = async (req: Request, res: Response) => {
     try {
       const { searchValue, pageNo, recordPerPage } = req.query;
       const payload = { searchValue, pageNo, recordPerPage };
@@ -86,7 +86,12 @@ class CityController {
 
   public addCity = async (req: Request, res: Response) => {
     try {
-      const newCity = await this.cityService.addCityService(req.body);
+      const creator = req.user || req.employee;
+      const newCity = await this.cityService.addCityService({
+        ...req.body,
+        createdBy: creator?._id,
+        createdByModel: req.user ? "User" : "Employee",
+      });
       res.sendCreated201Response("City added successfully", newCity);
     } catch (error) {
       logger.error("addCity", error);
@@ -117,7 +122,7 @@ class CityController {
     }
   };
 
-  public getAllCitiesInFrontend = async (_, res: Response) => {
+  public getAllCitiesInFrontend = async (_: Request, res: Response) => {
     try {
       const cities = await this.cityService.getAllCitiesFrontendService();
       res.sendSuccess200Response("Cities retrieved successfully", cities);
