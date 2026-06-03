@@ -1,4 +1,5 @@
 import ObjectIdConverter from "../../utils/objectIdConvertor";
+import mongoose from "mongoose";
 import {
   applicationModel,
   cityModel,
@@ -43,14 +44,34 @@ export class JobService {
         this.objectIdConverter.convertToObjectId(industry);
     }
     if (slectedCity) {
+      let cityIdsArray: string[] = [];
       if (typeof slectedCity === "string") {
-        slectedCity = [slectedCity];
+        cityIdsArray = slectedCity.split(",").map((id: string) => id.trim()).filter(Boolean);
+      } else if (Array.isArray(slectedCity)) {
+        cityIdsArray = slectedCity.map((id: any) => String(id).trim()).filter(Boolean);
       }
-      filterQuery["cityInfo._id"] = {
-        $in: slectedCity.map((data: any) =>
-          this.objectIdConverter.convertToObjectId(data),
-        ),
-      };
+
+      const selectedCityObjectIds = cityIdsArray
+        .filter((id: string) => mongoose.Types.ObjectId.isValid(id))
+        .map((id: string) => new mongoose.Types.ObjectId(id));
+
+      const cities = await cityModel.find({ _id: { $in: selectedCityObjectIds } });
+      const cityRegexes = cities.map((c: any) => new RegExp(`^${c.name.trim()}$`, "i"));
+
+      if (cityRegexes.length > 0) {
+        const allMatchingCities = await cityModel.find({
+          name: { $in: cityRegexes }
+        });
+        const allMatchingCityIds = allMatchingCities.map((c: any) => c._id);
+
+        filterQuery["cityInfo._id"] = {
+          $in: allMatchingCityIds,
+        };
+      } else {
+        filterQuery["cityInfo._id"] = {
+          $in: selectedCityObjectIds,
+        };
+      }
     }
     const pipeline: any = [
       {
