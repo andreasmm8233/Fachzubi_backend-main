@@ -29,9 +29,19 @@ class UserController {
 
   public getUser = async (req: Request, res: Response) => {
     try {
-      const { _id } = req.user;
-      const user = await this.userService.findOneWithOptions({ _id });
-      res.sendCreated201Response("User created successfully", user);
+      if (req.user) {
+        const { _id } = req.user;
+        const user = await this.userService.findOneWithOptions({ _id });
+        res.sendCreated201Response("User created successfully", user);
+      } else if (req.employee) {
+        res.sendCreated201Response("User created successfully", {
+          _id: req.employee._id,
+          username: `${req.employee.first_name}-${req.employee.last_name}`.toLowerCase().replace(/\s+/g, "-"),
+          email: req.employee.email,
+        });
+      } else {
+        res.sendUnauthorized401Response("Unauthorized", null);
+      }
     } catch (error) {
       res.sendErrorResponse("Error creating user", error);
     }

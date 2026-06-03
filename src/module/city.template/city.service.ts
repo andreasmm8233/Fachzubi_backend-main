@@ -7,6 +7,25 @@ export class CityService {
     return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrTargetUrl)}`;
   }
 
+  private formatQrTargetUrl(url: string, id: string): string {
+    const match = url.match(/\/+jobs\/+/);
+    if (!match) return url;
+
+    const matchedStr = match[0];
+    const jobsIndex = url.indexOf(matchedStr);
+    const urlBeforeJobs = url.substring(0, jobsIndex);
+    const base = `${urlBeforeJobs}/jobs/`;
+    const rest = url.substring(jobsIndex + matchedStr.length);
+    const parts = rest.split("/").filter(Boolean);
+    if (parts.length === 0) {
+      return base;
+    }
+    if (parts[0] === id) {
+      return `${base}${encodeURIComponent(id)}/${parts.slice(1).join("/")}`;
+    }
+    return `${base}${encodeURIComponent(id)}/${parts.join("/")}`;
+  }
+
   public async getAllCitiesService() {
     const cities = await cityModel.find();
     return cities;
@@ -72,8 +91,8 @@ export class CityService {
       createdByModel: extra.createdByModel,
     });
     if (extra.qrTargetUrl) {
-      newCity.qrTargetUrl = extra.qrTargetUrl;
-      newCity.qrCode = this.buildQrCode(extra.qrTargetUrl);
+      newCity.qrTargetUrl = this.formatQrTargetUrl(extra.qrTargetUrl, newCity._id.toString());
+      newCity.qrCode = this.buildQrCode(newCity.qrTargetUrl);
     }
     await newCity.save();
     return newCity;
@@ -85,6 +104,7 @@ export class CityService {
   ) {
     const payload: any = { ...updatedData };
     if (payload.qrTargetUrl) {
+      payload.qrTargetUrl = this.formatQrTargetUrl(payload.qrTargetUrl, id);
       payload.qrCode = this.buildQrCode(payload.qrTargetUrl);
     }
     const updatedCity = await cityModel.findByIdAndUpdate(id, payload, {
