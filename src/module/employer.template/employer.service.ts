@@ -507,6 +507,7 @@ export class EmployerService {
                 _id: 0,
                 name: 1,
                 address: 1,
+                zipCode: 1,
               },
             },
           ],
@@ -622,7 +623,8 @@ export class EmployerService {
           email: 1,
           companyName: 1,
           address: 1,
-          zipCode: 1,
+          zipCode: { $ifNull: ["$zipCode", "$city.zipCode"] },
+          city: 1,
           industryName: "$industryName.industryName",
           contactPerson: 1,
           companyLogo: {
