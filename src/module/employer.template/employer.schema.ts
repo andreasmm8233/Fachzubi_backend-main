@@ -14,6 +14,7 @@ export const createEmployerBodyValidator = Joi.object({
   videoLink: Joi.any().optional(),
   city: Joi.string().required(),
   status: Joi.boolean(),
+  region: Joi.string().optional().allow("").allow(null),
 });
 
 export const updateEmployerSchema = Joi.object({
@@ -32,4 +33,5 @@ export const updateEmployerSchema = Joi.object({
   status: Joi.boolean().optional(),
   contactPerson: Joi.string().optional(),
   id: Joi.string(),
+  region: Joi.string().optional().allow("").allow(null),
 });

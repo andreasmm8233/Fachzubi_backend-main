@@ -13,6 +13,7 @@ export const createJobSchema = Joi.object({
   jobDescription: Joi.string().required(),
   attachments: Joi.array(),
   status: Joi.boolean().default(false),
+  region: Joi.string().optional().allow("").allow(null),
 });
 
 // Joi schema for updating a job
@@ -29,4 +30,5 @@ export const updateJobSchema = Joi.object({
   attachments: Joi.array(),
   deletedAttachment: Joi.any(),
   jobDescription: Joi.string(),
+  region: Joi.string().optional().allow("").allow(null),
 });

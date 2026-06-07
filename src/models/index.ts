@@ -16,6 +16,7 @@ import JobImagesModel from "./jobImages";
 import JobTypesModel from "./jobType";
 import EmployeeModel from "./employee";
 import EmployeeSessionModel from "./employee.session";
+import RegionModel from "./region";
 
 export const userSessionModel = UserSessionModel;
 export const userModel = UserModel;
@@ -35,3 +36,4 @@ export const jobImagesModel = JobImagesModel;
 export const jobTypesModel = JobTypesModel;
 export const employeeModel = EmployeeModel;
 export const employeeSessionModel = EmployeeSessionModel;
+export const regionModel = RegionModel;

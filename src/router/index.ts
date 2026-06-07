@@ -9,6 +9,7 @@ import smtpRoute from "../module/smtp.template/smtp.routes";
 import manageKeyRoute from "../module/manage.key.template/manageKey.route";
 import jobTypesRoute from "../module/job.type.template/job.types.route";
 import employeeRoute from "../module/manage.employee.template/manage.employee.route";
+import regionRoute from "../module/region.template/region.routes";
 
 const router = [
   {
@@ -22,6 +23,10 @@ const router = [
   {
     prefix: "/user",
     router: userRoute,
+  },
+  {
+    prefix: "/regions",
+    router: regionRoute,
   },
   {
     prefix: "/cities",

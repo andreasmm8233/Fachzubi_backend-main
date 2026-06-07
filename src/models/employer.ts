@@ -18,6 +18,7 @@ export interface Employer {
   isDeleted?: boolean;
   createdBy?: Schema.Types.ObjectId;
   createdByModel?: "User" | "Employee";
+  region?: Schema.Types.ObjectId;
 }
 
 export interface EmployerDocument extends Employer, Document {
@@ -64,6 +65,11 @@ const employerSchema = new Schema<EmployerDocument>(
       type: Schema.Types.ObjectId,
       required: true,
       refPath: "createdByModel",
+    },
+    region: {
+      type: mongoose.Schema.Types.ObjectId,
+      required: false,
+      ref: "Region",
     },
   },
   {

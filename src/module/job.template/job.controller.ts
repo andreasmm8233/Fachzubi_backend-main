@@ -27,6 +27,7 @@ class JobController {
         isFillter,
         isFrontend,
         letter,
+        region,
       } = req.query;
       const creatorFilter = req.employee
         ? { createdBy: req.employee._id, createdByModel: "Employee" }
@@ -41,6 +42,7 @@ class JobController {
         isFrontend as string,
         creatorFilter,
         letter as string,
+        region as string,
       );
       res.sendSuccess200Response("Jobs retrieved successfully", result);
     } catch (error) {
@@ -90,6 +92,11 @@ class JobController {
       }
       if (req.body.newCity) {
         req.body.city = req.body.newCity;
+      }
+      if (req.body.region === "") {
+        req.body.region = null;
+      } else if (req.body.region && !/^[a-fA-F0-9]{24}$/.test(req.body.region)) {
+        delete req.body.region;
       }
       const updatedJob = await this.jobService.updateJobByIdService(
         id,
@@ -150,6 +157,7 @@ class JobController {
         industryName,
         newCity: city,
         jobType,
+        region,
       } = req.body;
       if (!req.body.startTime) {
         req.body.startTime = null;
@@ -195,6 +203,7 @@ class JobController {
         industryName,
         videoLink,
         jobType,
+        region: (region && /^[a-fA-F0-9]{24}$/.test(region)) ? region : undefined,
       });
       const { removedFile } = req.body;
       const jobsImages = req.files?.jobsImages;

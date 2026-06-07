@@ -12,6 +12,7 @@ import {
   jobTypesModel,
   mediaModel,
   userModel,
+  regionModel,
 } from "../../models/index";
 import { type Job } from "../../models/jobs";
 import { type Application } from "../../models/jobApplication";
@@ -35,6 +36,7 @@ export class JobService {
     isFrontend: string,
     creatorFilter?: { createdBy: any; createdByModel: string },
     letter?: string,
+    region?: string,
   ) {
     recordPerPage = recordPerPage ?? 10;
     recordPerPage = recordPerPage > 0 ? recordPerPage : 10;
@@ -42,6 +44,10 @@ export class JobService {
     if (industry) {
       filterQuery["industryName"] =
         this.objectIdConverter.convertToObjectId(industry);
+    }
+    if (region) {
+      filterQuery["region"] =
+        this.objectIdConverter.convertToObjectId(region);
     }
     if (slectedCity) {
       let cityIdsArray: string[] = [];
@@ -213,6 +219,7 @@ export class JobService {
           companyId: { $first: "$company._id" },
           startDate: { $first: "$startDate" },
           count: { $first: "$count" },
+          region: { $first: "$region" },
         },
       },
 
@@ -563,6 +570,36 @@ export class JobService {
         },
       },
       // End
+      // start region lookup
+      {
+        $lookup: {
+          from: regionModel.collection.name,
+          let: { regionId: "$region" },
+          pipeline: [
+            {
+              $match: {
+                $expr: {
+                  $eq: ["$_id", "$$regionId"],
+                },
+              },
+            },
+            {
+              $project: {
+                regionName: 1,
+                _id: 1,
+              },
+            },
+          ],
+          as: "regionDetail",
+        },
+      },
+      {
+        $unwind: {
+          path: "$regionDetail",
+          preserveNullAndEmptyArrays: true,
+        },
+      },
+      // end region lookup
       {
         $group: {
           _id: "$_id",
@@ -591,6 +628,7 @@ export class JobService {
           companyImages: { $addToSet: "$companyImages" },
           videoLink: { $first: "$videoLink" },
           jobTypeName: { $first: "$jobTypeDetail.jobTypeName" },
+          region: { $first: "$regionDetail" },
         },
       },
     ]);

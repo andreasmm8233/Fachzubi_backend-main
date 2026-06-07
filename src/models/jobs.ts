@@ -17,6 +17,7 @@ export interface Job {
   industryName: Schema.Types.ObjectId;
   videoLink: string[];
   jobType: Schema.Types.ObjectId;
+  region?: Schema.Types.ObjectId;
 }
 
 export interface JobDocument extends Job, Document {
@@ -57,6 +58,11 @@ const jobSchema = new Schema<JobDocument>(
       type: Schema.Types.ObjectId,
       required: true,
       refPath: "createdByModel",
+    },
+    region: {
+      type: Schema.Types.ObjectId,
+      ref: "Region",
+      required: false,
     },
   },
   {
