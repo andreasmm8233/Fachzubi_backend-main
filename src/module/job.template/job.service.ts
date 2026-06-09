@@ -334,6 +334,7 @@ export class JobService {
                 companyLogo: 1,
                 videoLink: 1,
                 companyDescription: 1,
+                website: 1,
                 phoneNo: 1,
               },
             },
