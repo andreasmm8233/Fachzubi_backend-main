@@ -160,6 +160,14 @@ export class JobService {
       },
       {
         $lookup: {
+          from: jobTypesModel.collection.name,
+          localField: "jobType",
+          foreignField: "_id",
+          as: "jobTypeInfo",
+        },
+      },
+      {
+        $lookup: {
           from: applicationModel.collection.name,
           let: { jobIds: "$_id" },
           pipeline: [
@@ -211,7 +219,7 @@ export class JobService {
           createdAt: { $first: "$createdAt" },
           city: { $addToSet: "$cityInfo.name" },
           industryName: {
-            $first: { $arrayElemAt: ["$industryInfo.industryName", 0] },
+            $first: "$industryInfo.industryName",
           },
           status: { $first: "$status" },
           company: { $first: "$company.companyName" },
@@ -220,6 +228,7 @@ export class JobService {
           startDate: { $first: "$startDate" },
           count: { $first: "$count" },
           region: { $first: "$region" },
+          jobTypeName: { $first: "$jobTypeInfo.jobTypeName" },
         },
       },
 
@@ -346,7 +355,7 @@ export class JobService {
             {
               $match: {
                 $expr: {
-                  $eq: ["$_id", "$$industryId"],
+                  $in: ["$_id", { $ifNull: ["$$industryId", []] }],
                 },
               },
             },
@@ -358,12 +367,6 @@ export class JobService {
             },
           ],
           as: "industryName",
-        },
-      },
-      {
-        $unwind: {
-          path: "$industryName",
-          preserveNullAndEmptyArrays: true,
         },
       },
       {
@@ -550,7 +553,7 @@ export class JobService {
                 $expr: {
                   $and: [
                     {
-                      $eq: ["$_id", "$$documentId"],
+                      $in: ["$_id", { $ifNull: ["$$documentId", []] }],
                     },
                     {
                       $eq: ["$isDeleted", false],
@@ -561,12 +564,6 @@ export class JobService {
             },
           ],
           as: "jobTypeDetail",
-        },
-      },
-      {
-        $unwind: {
-          path: "$jobTypeDetail",
-          preserveNullAndEmptyArrays: true,
         },
       },
       // End

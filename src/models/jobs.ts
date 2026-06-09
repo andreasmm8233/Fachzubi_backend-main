@@ -1,7 +1,7 @@
 import { Schema, model, type Document } from "mongoose";
 
 export interface Job {
-  city: Schema.Types.ObjectId;
+  city: Schema.Types.ObjectId[];
   company: Schema.Types.ObjectId;
   jobTitle: string;
   startDate: Date;
@@ -14,9 +14,9 @@ export interface Job {
   createdBy: Schema.Types.ObjectId;
   createdByModel?: "User" | "Employee";
   isDeleted: boolean;
-  industryName: Schema.Types.ObjectId;
+  industryName: Schema.Types.ObjectId[];
   videoLink: string[];
-  jobType: Schema.Types.ObjectId;
+  jobType: Schema.Types.ObjectId[];
   region?: Schema.Types.ObjectId;
 }
 
@@ -27,14 +27,14 @@ export interface JobDocument extends Job, Document {
 
 const jobSchema = new Schema<JobDocument>(
   {
-    jobType: { type: Schema.Types.ObjectId, required: false },
+    jobType: [{ type: Schema.Types.ObjectId, ref: "JobTypes", required: false }],
     videoLink: { type: [{ type: String }], required: false },
     city: [{ type: Schema.Types.ObjectId, ref: "City", required: true }],
-    industryName: {
+    industryName: [{
       type: Schema.Types.ObjectId,
       ref: "Industries",
       required: true,
-    },
+    }],
     company: {
       type: Schema.Types.ObjectId,
       ref: "Employer",
