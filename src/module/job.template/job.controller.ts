@@ -242,5 +242,46 @@ class JobController {
       res.sendErrorResponse("error", error);
     }
   };
+
+  public getAllDeletedJobs = async (req: Request, res: Response) => {
+    try {
+      const { searchValue, pageNo, recordPerPage } = req.query;
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
+      const result = await this.jobService.getAllDeletedJobsService(
+        searchValue as string,
+        Number(pageNo),
+        Number(recordPerPage),
+        creatorFilter,
+      );
+      res.sendSuccess200Response("Deleted jobs retrieved successfully", result);
+    } catch (error) {
+      logger.error("getAllDeletedJobs", error);
+      res.sendErrorResponse("Error retrieving deleted jobs", error);
+    }
+  };
+
+  public restoreJobById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const restoredJob = await this.jobService.restoreJobByIdService(id);
+      res.sendSuccess200Response("Job restored successfully", restoredJob);
+    } catch (error) {
+      logger.error("restoreJobById", error);
+      res.sendErrorResponse("Error restoring job", error);
+    }
+  };
+
+  public hardDeleteJobById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const deletedJob = await this.jobService.hardDeleteJobByIdService(id);
+      res.sendSuccess200Response("Job deleted permanently", deletedJob);
+    } catch (error) {
+      logger.error("hardDeleteJobById", error);
+      res.sendErrorResponse("Error deleting job permanently", error);
+    }
+  };
 }
 export default JobController;

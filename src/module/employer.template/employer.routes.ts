@@ -47,6 +47,22 @@ employerRoute.get(
   employerController.getCompanyDetail,
 );
 employerRoute.get(
+  "/deleted/all",
+  authMiddleware.requireUser,
+  employerController.getAllDeletedEmployers,
+);
+employerRoute.post(
+  "/restore/:id",
+  authMiddleware.requireUser,
+  employerController.restoreEmployerById,
+);
+employerRoute.delete(
+  "/hard-delete/:id",
+  authMiddleware.requireUser,
+  employerController.hardDeleteEmployerById,
+);
+
+employerRoute.get(
   "/:id",
   authMiddleware.requireUser,
   employerController.getEmployerById,

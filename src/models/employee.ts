@@ -8,6 +8,7 @@ export interface EmployeePermissions {
   manage_industries: boolean;
   job_types: boolean;
   manage_content: boolean;
+  manage_trash: boolean;
 }
 
 export interface Employee {
@@ -44,6 +45,7 @@ const employeeSchema = new Schema<EmployeeDocument>(
       manage_industries: { type: Boolean, default: false },
       job_types: { type: Boolean, default: false },
       manage_content: { type: Boolean, default: false },
+      manage_trash: { type: Boolean, default: false },
     },
   },
   { timestamps: true },

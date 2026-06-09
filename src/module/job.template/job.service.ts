@@ -853,4 +853,112 @@ export class JobService {
     const count = await applicationModel.count();
     return count;
   }
+
+  public async getAllDeletedJobsService(
+    searchValue: string,
+    pageNo: number,
+    recordPerPage: number,
+    creatorFilter?: { createdBy: any; createdByModel: string }
+  ) {
+    const pipeline: any[] = [
+      {
+        $match: {
+          isDeleted: true,
+          ...(creatorFilter ?? {}),
+        }
+      },
+      {
+        $lookup: {
+          from: employerModel.collection.name,
+          let: { companyId: "$company" },
+          pipeline: [
+            {
+              $match: {
+                $expr: { $eq: ["$_id", "$$companyId"] }
+              }
+            },
+            {
+              $project: {
+                companyName: 1
+              }
+            }
+          ],
+          as: "company",
+        }
+      },
+      {
+        $unwind: {
+          path: "$company",
+          preserveNullAndEmptyArrays: true,
+        }
+      },
+      {
+        $lookup: {
+          from: cityModel.collection.name,
+          localField: "city",
+          foreignField: "_id",
+          as: "cityInfo",
+        }
+      },
+      {
+        $project: {
+          jobTitle: 1,
+          createdAt: 1,
+          company: "$company.companyName",
+          companyId: "$company._id",
+          city: "$cityInfo.name",
+          status: 1,
+        }
+      }
+    ];
+
+    if (searchValue) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { jobTitle: { $regex: new RegExp(searchValue, "i") } },
+            { company: { $regex: new RegExp(searchValue, "i") } },
+          ]
+        }
+      });
+    }
+
+    const limit = recordPerPage || 10;
+    const skip = ((pageNo || 1) - 1) * limit;
+
+    pipeline.push({
+      $facet: {
+        metadata: [{ $count: "total" }],
+        data: [{ $skip: skip }, { $limit: limit }]
+      }
+    });
+
+    const result = await jobModel.aggregate(pipeline).exec();
+    const total = result[0]?.metadata[0]?.total ?? 0;
+    return {
+      data: result[0]?.data ?? [],
+      total,
+      pageNo: pageNo || 1,
+      recordPerPage: limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  public async getDeletedCount(creatorFilter?: { createdBy: any; createdByModel: string }) {
+    return await jobModel.countDocuments({ isDeleted: true, ...(creatorFilter ?? {}) });
+  }
+
+  public async restoreJobByIdService(id: string) {
+    const objectId = this.objectIdConverter.convertToObjectId(id);
+    return await jobModel.findByIdAndUpdate(
+      objectId,
+      { $set: { isDeleted: false } },
+      { new: true }
+    );
+  }
+
+  public async hardDeleteJobByIdService(id: string) {
+    const objectId = this.objectIdConverter.convertToObjectId(id);
+    return await jobModel.findByIdAndDelete(objectId);
+  }
 }

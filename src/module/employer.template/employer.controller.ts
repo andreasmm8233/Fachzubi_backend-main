@@ -309,6 +309,53 @@ class EmployerController {
       res.sendErrorResponse("failed", error);
     }
   };
+
+  public getAllDeletedEmployers = async (req: Request, res: Response) => {
+    try {
+      const { searchValue, pageNo, recordPerPage } = req.query;
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
+      const employers = await this.employerService.getAllDeletedEmployersService(
+        searchValue as string,
+        Number(pageNo),
+        Number(recordPerPage),
+        creatorFilter,
+      );
+      const totalRecords = await this.employerService.getDeletedCount(creatorFilter);
+      const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
+      const count = Math.ceil(totalRecords / recordPerPageValue);
+      res.sendSuccess200Response("Deleted employers retrieved successfully", {
+        employers: employers.data,
+        count,
+      });
+    } catch (error) {
+      logger.error("getAllDeletedEmployers", error);
+      res.sendErrorResponse("Error retrieving deleted employers", error);
+    }
+  };
+
+  public restoreEmployerById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const restoredEmployer = await this.employerService.restoreEmployerByIdService(id);
+      res.sendSuccess200Response("Employer restored successfully", restoredEmployer);
+    } catch (error) {
+      logger.error("restoreEmployerById", error);
+      res.sendErrorResponse("Error restoring employer", error);
+    }
+  };
+
+  public hardDeleteEmployerById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const deletedEmployer = await this.employerService.hardDeleteEmployerByIdService(id);
+      res.sendSuccess200Response("Employer deleted permanently", deletedEmployer);
+    } catch (error) {
+      logger.error("hardDeleteEmployerById", error);
+      res.sendErrorResponse("Error deleting employer permanently", error);
+    }
+  };
 }
 
 export default EmployerController;

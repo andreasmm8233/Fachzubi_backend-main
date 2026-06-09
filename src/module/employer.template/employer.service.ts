@@ -851,4 +851,87 @@ export class EmployerService {
     const count = await appoinmentModel.count();
     return count;
   }
+
+  public async getAllDeletedEmployersService(
+    searchValue: string,
+    pageNo: number,
+    recordPerPage: number,
+    creatorFilter?: { createdBy: any; createdByModel: string }
+  ) {
+    const pipeline: any[] = [
+      {
+        $match: {
+          isDeleted: true,
+          ...(creatorFilter ?? {}),
+        }
+      },
+      {
+        $lookup: {
+          from: cityModel.collection.name,
+          localField: "city",
+          foreignField: "_id",
+          as: "cityInfo",
+        }
+      },
+      {
+        $project: {
+          companyName: 1,
+          email: 1,
+          contactPerson: 1,
+          createdAt: 1,
+          city: "$cityInfo.name",
+        }
+      }
+    ];
+
+    if (searchValue) {
+      pipeline.push({
+        $match: {
+          $or: [
+            { companyName: { $regex: new RegExp(searchValue, "i") } },
+            { email: { $regex: new RegExp(searchValue, "i") } },
+            { contactPerson: { $regex: new RegExp(searchValue, "i") } },
+          ]
+        }
+      });
+    }
+
+    const limit = recordPerPage || 10;
+    const skip = ((pageNo || 1) - 1) * limit;
+
+    pipeline.push({
+      $facet: {
+        metadata: [{ $count: "total" }],
+        data: [{ $skip: skip }, { $limit: limit }]
+      }
+    });
+
+    const result = await employerModel.aggregate(pipeline).exec();
+    const total = result[0]?.metadata[0]?.total ?? 0;
+    return {
+      data: result[0]?.data ?? [],
+      total,
+      pageNo: pageNo || 1,
+      recordPerPage: limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  public async getDeletedCount(creatorFilter?: { createdBy: any; createdByModel: string }) {
+    return await employerModel.countDocuments({ isDeleted: true, ...(creatorFilter ?? {}) });
+  }
+
+  public async restoreEmployerByIdService(id: string) {
+    const objectId = this.objectIdConverter.convertToObjectId(id);
+    return await employerModel.findByIdAndUpdate(
+      objectId,
+      { $set: { isDeleted: false } },
+      { new: true }
+    );
+  }
+
+  public async hardDeleteEmployerByIdService(id: string) {
+    const objectId = this.objectIdConverter.convertToObjectId(id);
+    return await employerModel.findByIdAndDelete(objectId);
+  }
 }

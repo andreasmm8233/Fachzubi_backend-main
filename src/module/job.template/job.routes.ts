@@ -12,6 +12,9 @@ const joiValidator = new JoiValidator();
 jobRoute.get("/get-suggestion", jobController.getJobSuggestion);
 jobRoute.post("/job-application", jobController.addApplication);
 jobRoute.get("/", jobController.getAllJobs);
+jobRoute.get("/deleted/all", authMiddleware.requireUser, jobController.getAllDeletedJobs);
+jobRoute.post("/restore/:id", authMiddleware.requireUser, jobController.restoreJobById);
+jobRoute.delete("/hard-delete/:id", authMiddleware.requireUser, jobController.hardDeleteJobById);
 jobRoute.get("/:id", jobController.getJobById);
 jobRoute.post(
   "/",
