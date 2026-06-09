@@ -355,7 +355,22 @@ export class JobService {
             {
               $match: {
                 $expr: {
-                  $in: ["$_id", { $ifNull: ["$$industryId", []] }],
+                  $in: [
+                    "$_id",
+                    {
+                      $cond: {
+                        if: { $isArray: "$$industryId" },
+                        then: "$$industryId",
+                        else: {
+                          $cond: {
+                            if: { $eq: ["$$industryId", null] },
+                            then: [],
+                            else: ["$$industryId"],
+                          },
+                        },
+                      },
+                    },
+                  ],
                 },
               },
             },
@@ -377,7 +392,22 @@ export class JobService {
             {
               $match: {
                 $expr: {
-                  $in: ["$_id", "$$cityId"],
+                  $in: [
+                    "$_id",
+                    {
+                      $cond: {
+                        if: { $isArray: "$$cityId" },
+                        then: "$$cityId",
+                        else: {
+                          $cond: {
+                            if: { $eq: ["$$cityId", null] },
+                            then: [],
+                            else: ["$$cityId"],
+                          },
+                        },
+                      },
+                    },
+                  ],
                 },
               },
             },
@@ -553,7 +583,22 @@ export class JobService {
                 $expr: {
                   $and: [
                     {
-                      $in: ["$_id", { $ifNull: ["$$documentId", []] }],
+                      $in: [
+                        "$_id",
+                        {
+                          $cond: {
+                            if: { $isArray: "$$documentId" },
+                            then: "$$documentId",
+                            else: {
+                              $cond: {
+                                if: { $eq: ["$$documentId", null] },
+                                then: [],
+                                else: ["$$documentId"],
+                              },
+                            },
+                          },
+                        },
+                      ],
                     },
                     {
                       $eq: ["$isDeleted", false],

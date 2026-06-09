@@ -87,6 +87,7 @@ class CityController {
   public addCity = async (req: Request, res: Response) => {
     try {
       const creator = req.user || req.employee;
+      logger.info("[CityController.addCity] req.body: " + JSON.stringify(req.body));
       const newCity = await this.cityService.addCityService({
         ...req.body,
         createdBy: creator?._id,

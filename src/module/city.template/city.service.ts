@@ -1,6 +1,7 @@
-import { type Schema } from "mongoose";
-import { cityModel } from "../../models/index";
+import { type Schema, Types } from "mongoose";
+import { cityModel, jobModel } from "../../models/index";
 import { type CityDocument } from "../../models/city";
+import logger from "../../utils/logger";
 
 export class CityService {
   private buildQrCode(qrTargetUrl: string) {
@@ -95,6 +96,50 @@ export class CityService {
       newCity.qrCode = this.buildQrCode(newCity.qrTargetUrl);
     }
     await newCity.save();
+
+    if (extra.duplicateFromCityId) {
+      logger.info(`[DuplicateCity] Starting job cloning from source city ID ${extra.duplicateFromCityId}`);
+      try {
+        const originalCityObjectId = new Types.ObjectId(extra.duplicateFromCityId);
+        
+        // 1. Direct query matching ObjectId or String ID
+        let originalJobs = await jobModel.find({
+          $or: [
+            { city: originalCityObjectId },
+            { city: extra.duplicateFromCityId.toString() }
+          ],
+          isDeleted: { $ne: true },
+        });
+
+        // 2. Fallback query retrieving all active jobs and filtering manually (guarantees match)
+        if (originalJobs.length === 0) {
+          const allActiveJobs = await jobModel.find({ isDeleted: { $ne: true } });
+          originalJobs = allActiveJobs.filter((job: any) => {
+            const cities = job.city || [];
+            return cities.some((cId: any) => cId.toString() === extra.duplicateFromCityId.toString());
+          });
+        }
+
+        logger.info(`[DuplicateCity] Found ${originalJobs.length} jobs to clone from city ID ${extra.duplicateFromCityId}`);
+
+        for (const job of originalJobs) {
+          const clonedJob = job.toObject() as any;
+          delete clonedJob._id;
+          delete clonedJob.id;
+          delete clonedJob.createdAt;
+          delete clonedJob.updatedAt;
+
+          clonedJob.city = (clonedJob.city || []).map((cId: any) =>
+            cId.toString() === extra.duplicateFromCityId.toString() ? newCity._id : cId
+          );
+
+          await jobModel.create(clonedJob);
+        }
+      } catch (err) {
+        logger.error("[DuplicateCity] Error cloning jobs:", err);
+      }
+    }
+
     return newCity;
   }
 
