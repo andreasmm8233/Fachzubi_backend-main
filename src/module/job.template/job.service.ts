@@ -62,7 +62,7 @@ export class JobService {
         .map((id: string) => new mongoose.Types.ObjectId(id));
 
       const cities = await cityModel.find({ _id: { $in: selectedCityObjectIds } });
-      const cityRegexes = cities.map((c: any) => new RegExp(`^${c.name.trim()}$`, "i"));
+      const cityRegexes = cities.map((c: any) => new RegExp(`^${c.name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"));
 
       if (cityRegexes.length > 0) {
         const allMatchingCities = await cityModel.find({
@@ -218,6 +218,7 @@ export class JobService {
           jobTitle: { $first: "$jobTitle" },
           createdAt: { $first: "$createdAt" },
           city: { $addToSet: "$cityInfo.name" },
+          cityNames: { $first: "$cityInfo.name" },
           industryName: {
             $first: "$industryInfo.industryName",
           },
@@ -242,7 +243,7 @@ export class JobService {
         $match: {
           $or: [
             { jobTitle: { $regex: new RegExp(searchValue, "i") } },
-            { city: { $regex: new RegExp(searchValue, "i") } },
+            { cityNames: { $regex: new RegExp(searchValue, "i") } },
             { industryName: { $regex: new RegExp(searchValue, "i") } },
             { company: { $regex: new RegExp(searchValue, "i") } },
           ],
@@ -964,6 +965,7 @@ export class JobService {
           $or: [
             { jobTitle: { $regex: new RegExp(searchValue, "i") } },
             { company: { $regex: new RegExp(searchValue, "i") } },
+            { city: { $regex: new RegExp(searchValue, "i") } },
           ]
         }
       });

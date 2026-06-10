@@ -1,5 +1,5 @@
 import { type Schema, Types } from "mongoose";
-import { cityModel, jobModel } from "../../models/index";
+import { cityModel, jobModel, employerModel } from "../../models/index";
 import { type CityDocument } from "../../models/city";
 import logger from "../../utils/logger";
 
@@ -122,6 +122,8 @@ export class CityService {
 
         logger.info(`[DuplicateCity] Found ${originalJobs.length} jobs to clone from city ID ${extra.duplicateFromCityId}`);
 
+        const employerClonesMap = new Map<string, Types.ObjectId>();
+
         for (const job of originalJobs) {
           const clonedJob = job.toObject() as any;
           delete clonedJob._id;
@@ -132,6 +134,32 @@ export class CityService {
           clonedJob.city = (clonedJob.city || []).map((cId: any) =>
             cId.toString() === extra.duplicateFromCityId.toString() ? newCity._id : cId
           );
+
+          const originalEmployerId = job.company ? job.company.toString() : null;
+          let clonedEmployerId = originalEmployerId ? employerClonesMap.get(originalEmployerId) : undefined;
+
+          if (originalEmployerId && !clonedEmployerId) {
+            const originalEmployer = await employerModel.findOne({ _id: job.company, isDeleted: { $ne: true } });
+            if (originalEmployer) {
+              const clonedEmployerData = originalEmployer.toObject() as any;
+              delete clonedEmployerData._id;
+              delete clonedEmployerData.id;
+              delete clonedEmployerData.createdAt;
+              delete clonedEmployerData.updatedAt;
+
+              clonedEmployerData.city = newCity._id;
+              clonedEmployerData.isDeleted = false; // Ensure cloned employer is not deleted
+
+              const newEmployer = await employerModel.create(clonedEmployerData);
+              clonedEmployerId = newEmployer._id;
+              employerClonesMap.set(originalEmployerId, newEmployer._id);
+              logger.info(`[DuplicateCity] Cloned employer ${originalEmployer.companyName} to new city ${newCity.name} (New Employer ID: ${newEmployer._id})`);
+            }
+          }
+
+          if (clonedEmployerId) {
+            clonedJob.company = clonedEmployerId;
+          }
 
           await jobModel.create(clonedJob);
         }
