@@ -8,7 +8,8 @@ export interface CreateSessionType {
 }
 
 export interface JwtRefreshTokenPayload {
-  sessionId: string;
+  sessionId?: string;
+  empSessionId?: string;
 }
 
 export interface JwtAccessTokenPayload extends JwtRefreshTokenPayload {}

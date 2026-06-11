@@ -6,6 +6,7 @@ import {
 import JwtService from "../../utils/jwt";
 import { UserService } from "../user.template/user.service";
 import logger from "../../utils/logger";
+import { employeeModel, employeeSessionModel } from "../../models/index";
 export class AuthService {
   private readonly jwtService = new JwtService();
   private readonly userService: UserService;
@@ -30,21 +31,42 @@ export class AuthService {
       if (!decoded) {
         return null;
       }
-      const { sessionId } = decoded;
-      const userSession =
-        await this.userService.getUserSessionDetailsBySessionId(sessionId);
-      if (!userSession?.isValidSession) {
-        return null;
+      
+      const { sessionId, empSessionId } = decoded;
+      
+      if (sessionId) {
+        const userSession =
+          await this.userService.getUserSessionDetailsBySessionId(sessionId);
+        if (!userSession?.isValidSession) {
+          return null;
+        }
+        // Generate accessToken
+        const userDetails = await this.userService.findById(userSession.userId);
+        if (userDetails) {
+          const accessTokenPayload: JwtAccessTokenPayload = {
+            sessionId: userSession._id,
+          };
+          const accessToken = this.createAccessToken(accessTokenPayload);
+          return accessToken;
+        }
+      } else if (empSessionId) {
+        const session = await employeeSessionModel.findOne({
+          _id: empSessionId,
+          isValidSession: true,
+        });
+        if (!session) {
+          return null;
+        }
+        const employee = await employeeModel.findById(session.employeeId);
+        if (employee) {
+          const accessToken = this.jwtService.sign(
+            { empSessionId: String(session._id) },
+            { expiresIn: "1h" },
+          );
+          return accessToken;
+        }
       }
-      // Generate accessToken
-      const userDetails = await this.userService.findById(userSession.userId);
-      if (userDetails) {
-        const accessTokenPayload: JwtAccessTokenPayload = {
-          sessionId: userSession._id,
-        };
-        const accessToken = this.createAccessToken(accessTokenPayload);
-        return accessToken;
-      }
+      
       return null;
     } catch (error: any) {
       logger.error("getAccessTokenFromRefreshToken", error);
