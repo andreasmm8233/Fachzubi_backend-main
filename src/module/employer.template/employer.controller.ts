@@ -6,6 +6,7 @@ import ObjectIdConverter from "../../utils/objectIdConvertor";
 import { CompanyImageHandler } from "../../utils/companyImageHandler";
 import { type EmployerBodyPaylaodFrontend } from "./employer.types";
 import { type Appoinment } from "src/models/appoinment";
+import { syncCompanyToAzubi, syncDeleteCompanyToAzubi } from "../../utils/syncToAzubi";
 class EmployerController {
   private readonly employerService: EmployerService;
   private readonly fileHandler: FileHandler;
@@ -122,6 +123,7 @@ class EmployerController {
           updatedEmployer._id,
         );
       }
+      syncCompanyToAzubi(updatedEmployer); // fire-and-forget
       res.sendSuccess200Response(
         "Employer updated successfully",
         updatedEmployer,
@@ -137,6 +139,7 @@ class EmployerController {
       if (id) {
         const deletedEmployer =
           await this.employerService.deleteEmployerByIdService(id as string);
+        syncDeleteCompanyToAzubi(id as string); // fire-and-forget
         res.sendSuccess200Response(
           "Employer marked as deleted successfully",
           deletedEmployer,
@@ -210,6 +213,7 @@ class EmployerController {
           newEmployer._id,
         );
       }
+      syncCompanyToAzubi(newEmployer); // fire-and-forget, user block nahi hoga
       res.sendCreated201Response("Employer added successfully", newEmployer);
     } catch (error) {
       res.sendErrorResponse("Error adding employer", error);

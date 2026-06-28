@@ -4,6 +4,7 @@ import logger from "../../utils/logger";
 import { FileHandler } from "../../utils/fileHandler";
 import { JobDocumentService } from "./job.documents.service";
 import { JobImageHandler } from "../../utils/jobsImageHandler";
+import { syncJobToAzubi, syncDeleteJobToAzubi } from "../../utils/syncToAzubi";
 class JobController {
   private readonly jobService: JobService;
   private readonly fileHandler: FileHandler;
@@ -120,6 +121,7 @@ class JobController {
           : [req.body?.deletedAttachment];
         await this.jobDocumentService.deleteDocuments(deletedAttachments);
       }
+      syncJobToAzubi(updatedJob); // fire-and-forget
       res.sendSuccess200Response("Job updated successfully", updatedJob);
     } catch (error) {
       res.sendErrorResponse("Error updating job", error);
@@ -130,6 +132,7 @@ class JobController {
     try {
       const { id } = req.params;
       const deletedJob = await this.jobService.deleteJobByIdService(id);
+      syncDeleteJobToAzubi(id); // fire-and-forget
       res.sendSuccess200Response(
         "Job marked as deleted successfully",
         deletedJob,
@@ -216,6 +219,7 @@ class JobController {
       }
       await this.jobDocumentService.addDocuments(attachments, newJob._id);
 
+      syncJobToAzubi(newJob); // fire-and-forget
       res.sendCreated201Response("Job added successfully", newJob);
     } catch (error) {
       res.sendErrorResponse("Error adding job", error);
