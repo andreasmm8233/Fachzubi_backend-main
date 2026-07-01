@@ -1,6 +1,13 @@
+import mongoose from "mongoose";
 import { companyImageModel } from "../models/index";
 import logger from "./logger";
 import { FileHandler } from "./fileHandler";
+
+const isValidObjectId = (value: unknown): value is string =>
+  typeof value === "string" && mongoose.Types.ObjectId.isValid(value);
+
+const isUploadedFile = (file: any): boolean =>
+  Boolean(file) && typeof file === "object" && "data" in file;
 
 export class CompanyImageHandler {
   private readonly fileHandler: FileHandler;
@@ -14,43 +21,21 @@ export class CompanyImageHandler {
     companyId: string,
   ) {
     try {
-      if (removeFile) {
-        try {
-          for (let i = 0; i < removeFile.length; i++) {
-            await companyImageModel.deleteMany({
-              imageId: removeFile[i],
-            });
-          }
-        } catch (error) {
-          await companyImageModel.deleteMany({
-            imageId: removeFile,
-          });
-        }
+      // Delete only entries that are valid ObjectIds (skip temp upload uids
+      // like "rc-upload-…" and "undefined" that the frontend may send).
+      const removeIds = (Array.isArray(removeFile) ? removeFile : [removeFile])
+        .filter(isValidObjectId);
+      if (removeIds.length) {
+        await companyImageModel.deleteMany({ imageId: { $in: removeIds } });
       }
 
       if (files) {
-        try {
-          let newFiles: any = [];
-          if (!files.length) {
-            newFiles.push(files);
-          } else {
-            newFiles = files;
-          }
-          for (let i = 0; i < newFiles.length; i++) {
-            const mediaId = await this.fileHandler.saveFileAndCreateMedia(
-              newFiles[i],
-            );
-            await companyImageModel.create({
-              imageId: mediaId,
-              companyId,
-            });
-          }
-        } catch (error) {
-          const mediaId = await this.fileHandler.saveFileAndCreateMedia(files);
-          await companyImageModel.create({
-            imageId: mediaId,
-            companyId,
-          });
+        const newFiles: any[] = Array.isArray(files) ? files : [files];
+        for (const file of newFiles) {
+          if (!isUploadedFile(file)) continue; // skip strings / undefined
+          const mediaId = await this.fileHandler.saveFileAndCreateMedia(file);
+          if (!mediaId) continue; // skip failed saves (never store null imageId)
+          await companyImageModel.create({ imageId: mediaId, companyId });
         }
       }
     } catch (error) {

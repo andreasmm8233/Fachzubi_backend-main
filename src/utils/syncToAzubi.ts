@@ -4,6 +4,8 @@ import {
   companyImageModel,
   mediaModel,
   jobModel,
+  jobImagesModel,
+  jobDocumentModel,
 } from "../models";
 
 const getPublicBaseUrl = (): string =>
@@ -142,6 +144,30 @@ const buildFullJobPayload = async (
     ? job.industryName.map((i: any) => i?.industryName).filter(Boolean)
     : [];
 
+  // Job gallery images (jobImages -> media filepath)
+  const imageDocs: any[] = await jobImagesModel.find({ jobId: job._id }).lean();
+  const imageMediaIds = imageDocs.map((d) => d.imageId);
+  const imageMedia: any[] = imageMediaIds.length
+    ? await mediaModel.find({ _id: { $in: imageMediaIds } }).lean()
+    : [];
+  const jobImages = imageMedia
+    .map((m) => toAbsoluteUrl(m.filepath))
+    .filter((u): u is string => Boolean(u));
+
+  // Attachments / documents (jobDocument -> media filepath)
+  const docDocs: any[] = await jobDocumentModel.find({ job: job._id }).lean();
+  const docMediaIds = docDocs.map((d) => d.document);
+  const docMedia: any[] = docMediaIds.length
+    ? await mediaModel.find({ _id: { $in: docMediaIds } }).lean()
+    : [];
+  const attachments = docMedia
+    .map((m) => ({
+      file: toAbsoluteUrl(m.filepath),
+      fileName: m.fileName ?? "",
+      type: m.type ?? "",
+    }))
+    .filter((a) => Boolean(a.file));
+
   return {
     fachzubiId: String(job._id),
     fachzubiCompanyId: job.company?._id ? String(job.company._id) : String(job.company),
@@ -160,6 +186,8 @@ const buildFullJobPayload = async (
     industryNames,
     industryName: industryNames.join(", "),
     regionName: job.region?.regionName ?? "",
+    jobImages,
+    attachments,
     createdAt: job.createdAt,
     updatedAt: job.updatedAt,
   };
