@@ -16,6 +16,7 @@ import { type Appoinment } from "src/models/appoinment";
 import ejs from "ejs";
 import path from "path";
 import emailService from "../../utils/emailService";
+import logger from "../../utils/logger";
 export class EmployerService {
   private readonly objectIdConverter: ObjectIdConverter;
   constructor() {
@@ -213,12 +214,23 @@ export class EmployerService {
     return updatedEmployer;
   }
 
+  // Soft-delete a company and cascade the soft-delete to every active job that
+  // belongs to it, so deleting a company also moves its jobs to the trash.
   public async deleteEmployerByIdService(id: string) {
     const deletedEmployer = await employerModel.findByIdAndUpdate(
       id,
       { $set: { isDeleted: true } },
       { new: true },
     );
+
+    const jobResult = await jobModel.updateMany(
+      { company: id, isDeleted: { $ne: true } },
+      { $set: { isDeleted: true } },
+    );
+    logger.info(
+      `[deleteEmployer] Soft-deleted ${jobResult.modifiedCount} job(s) linked to company ${id}`,
+    );
+
     return deletedEmployer;
   }
 
@@ -921,17 +933,30 @@ export class EmployerService {
     return await employerModel.countDocuments({ isDeleted: true, ...(creatorFilter ?? {}) });
   }
 
+  // Restore a soft-deleted company and cascade-restore the jobs linked to it.
   public async restoreEmployerByIdService(id: string) {
     const objectId = this.objectIdConverter.convertToObjectId(id);
-    return await employerModel.findByIdAndUpdate(
+    const restoredEmployer = await employerModel.findByIdAndUpdate(
       objectId,
       { $set: { isDeleted: false } },
       { new: true }
     );
+
+    const jobResult = await jobModel.updateMany(
+      { company: objectId, isDeleted: true },
+      { $set: { isDeleted: false } },
+    );
+    logger.info(
+      `[restoreEmployer] Restored ${jobResult.modifiedCount} job(s) linked to company ${id}`,
+    );
+
+    return restoredEmployer;
   }
 
+  // Permanently remove a company and the jobs that were trashed together with it.
   public async hardDeleteEmployerByIdService(id: string) {
     const objectId = this.objectIdConverter.convertToObjectId(id);
+    await jobModel.deleteMany({ company: objectId, isDeleted: true });
     return await employerModel.findByIdAndDelete(objectId);
   }
 }

@@ -6,7 +6,9 @@ import ObjectIdConverter from "../../utils/objectIdConvertor";
 import { CompanyImageHandler } from "../../utils/companyImageHandler";
 import { type EmployerBodyPaylaodFrontend } from "./employer.types";
 import { type Appoinment } from "src/models/appoinment";
-import { syncCompanyToAzubi, syncDeleteCompanyToAzubi } from "../../utils/syncToAzubi";
+// Only company creation is synced to AzubiB2B; update/delete sync is disabled.
+// import { syncDeleteCompanyToAzubi } from "../../utils/syncToAzubi";
+import { syncCompanyToAzubi } from "../../utils/syncToAzubi";
 class EmployerController {
   private readonly employerService: EmployerService;
   private readonly fileHandler: FileHandler;
@@ -44,6 +46,7 @@ class EmployerController {
       res.sendSuccess200Response("Employers retrieved successfully", {
         employers,
         count,
+        total: totalRecords,
       });
     } catch (error) {
       logger.error("getAllEmployers", error);
@@ -139,7 +142,8 @@ class EmployerController {
       if (id) {
         const deletedEmployer =
           await this.employerService.deleteEmployerByIdService(id as string);
-        syncDeleteCompanyToAzubi(id as string); // fire-and-forget
+        // AzubiB2B sync disabled for deletes — only company creation is synced.
+        // syncDeleteCompanyToAzubi(id as string); // fire-and-forget
         res.sendSuccess200Response(
           "Employer marked as deleted successfully",
           deletedEmployer,

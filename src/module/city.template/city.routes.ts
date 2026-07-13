@@ -14,6 +14,21 @@ cityRoute.get(
   cityController.getAllCitiesByFilter,
 );
 cityRoute.get(
+  "/deleted/all",
+  authMiddleware.requireUser,
+  cityController.getAllDeletedCities,
+);
+cityRoute.post(
+  "/restore/:id",
+  authMiddleware.requireUser,
+  cityController.restoreCityById,
+);
+cityRoute.delete(
+  "/hard-delete/:id",
+  authMiddleware.requireUser,
+  cityController.hardDeleteCityById,
+);
+cityRoute.get(
   "/:id/download-qr",
   authMiddleware.requireUser,
   cityController.downloadCityQrCode,

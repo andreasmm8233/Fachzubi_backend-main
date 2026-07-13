@@ -4,7 +4,9 @@ import logger from "../../utils/logger";
 import { FileHandler } from "../../utils/fileHandler";
 import { JobDocumentService } from "./job.documents.service";
 import { JobImageHandler } from "../../utils/jobsImageHandler";
-import { syncJobToAzubi, syncDeleteJobToAzubi } from "../../utils/syncToAzubi";
+// Only job creation is synced to AzubiB2B; update/delete sync is disabled.
+// import { syncDeleteJobToAzubi } from "../../utils/syncToAzubi";
+import { syncJobToAzubi } from "../../utils/syncToAzubi";
 class JobController {
   private readonly jobService: JobService;
   private readonly fileHandler: FileHandler;
@@ -132,7 +134,8 @@ class JobController {
     try {
       const { id } = req.params;
       const deletedJob = await this.jobService.deleteJobByIdService(id);
-      syncDeleteJobToAzubi(id); // fire-and-forget
+      // AzubiB2B sync disabled for deletes — only job creation is synced.
+      // syncDeleteJobToAzubi(id); // fire-and-forget
       res.sendSuccess200Response(
         "Job marked as deleted successfully",
         deletedJob,

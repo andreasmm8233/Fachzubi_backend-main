@@ -2,6 +2,8 @@ import { type Schema, Types } from "mongoose";
 import { cityModel, jobModel, employerModel } from "../../models/index";
 import { type CityDocument } from "../../models/city";
 import logger from "../../utils/logger";
+// AzubiB2B sync intentionally not called from cascade delete/restore —
+// only direct job/company creation is synced to AzubiB2B.
 
 export class CityService {
   private buildQrCode(qrTargetUrl: string) {
@@ -28,7 +30,7 @@ export class CityService {
   }
 
   public async getAllCitiesService() {
-    const cities = await cityModel.find();
+    const cities = await cityModel.find({ isDeleted: { $ne: true } });
     return cities;
   }
 
@@ -186,13 +188,124 @@ export class CityService {
     return updatedCity;
   }
 
+  // Soft-delete a city and cascade the soft-delete to every active job and
+  // company that references it, so deleting a city also moves its jobs and
+  // companies to the trash.
   public async deleteCityByIdService(id: string) {
-    const deletedCity = await cityModel.findByIdAndDelete(id);
+    const objectId = new Types.ObjectId(id);
+    const deletedCity = await cityModel.findByIdAndUpdate(
+      objectId,
+      { $set: { isDeleted: true } },
+      { new: true },
+    );
+
+    // Cascade: jobs linked to this city
+    const jobResult = await jobModel.updateMany(
+      { city: objectId, isDeleted: { $ne: true } },
+      { $set: { isDeleted: true } },
+    );
+
+    // Cascade: companies linked to this city
+    const companyResult = await employerModel.updateMany(
+      { city: objectId, isDeleted: { $ne: true } },
+      { $set: { isDeleted: true } },
+    );
+
+    logger.info(
+      `[deleteCity] Soft-deleted ${jobResult.modifiedCount} job(s) and ` +
+        `${companyResult.modifiedCount} company(ies) linked to city ${id}`,
+    );
+
+    return deletedCity;
+  }
+
+  public async getAllDeletedCitiesService(payload: {
+    searchValue?: string;
+    pageNo?: string | number;
+    recordPerPage?: string | number;
+  }) {
+    const { searchValue, pageNo, recordPerPage } = payload;
+    const filter: Record<string, any> = { isDeleted: true };
+    if (searchValue) {
+      filter.name = { $regex: new RegExp(searchValue, "i") };
+    }
+
+    const limit = parseInt(String(recordPerPage || "10"));
+    const skip = ((parseInt(String(pageNo)) || 1) - 1) * limit;
+
+    const [total, cities] = await Promise.all([
+      cityModel.countDocuments(filter),
+      cityModel
+        .find(filter)
+        .sort({ updatedAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean()
+        .exec(),
+    ]);
+
+    // Count the jobs and companies that would be restored alongside each city.
+    const data = await Promise.all(
+      cities.map(async (city: any) => {
+        const [linkedJobsCount, linkedCompaniesCount] = await Promise.all([
+          jobModel.countDocuments({ city: city._id, isDeleted: true }),
+          employerModel.countDocuments({ city: city._id, isDeleted: true }),
+        ]);
+        return { ...city, linkedJobsCount, linkedCompaniesCount };
+      }),
+    );
+
+    return {
+      data,
+      total,
+      pageNo: parseInt(String(pageNo)) || 1,
+      recordPerPage: limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  }
+
+  // Restore a soft-deleted city and cascade-restore the jobs and companies
+  // linked to it.
+  public async restoreCityByIdService(id: string) {
+    const objectId = new Types.ObjectId(id);
+    const restoredCity = await cityModel.findByIdAndUpdate(
+      objectId,
+      { $set: { isDeleted: false } },
+      { new: true },
+    );
+
+    const jobResult = await jobModel.updateMany(
+      { city: objectId, isDeleted: true },
+      { $set: { isDeleted: false } },
+    );
+
+    const companyResult = await employerModel.updateMany(
+      { city: objectId, isDeleted: true },
+      { $set: { isDeleted: false } },
+    );
+
+    logger.info(
+      `[restoreCity] Restored ${jobResult.modifiedCount} job(s) and ` +
+        `${companyResult.modifiedCount} company(ies) linked to city ${id}`,
+    );
+
+    return restoredCity;
+  }
+
+  // Permanently remove a city and the jobs/companies trashed together with it.
+  public async hardDeleteCityByIdService(id: string) {
+    const objectId = new Types.ObjectId(id);
+    await jobModel.deleteMany({ city: objectId, isDeleted: true });
+    await employerModel.deleteMany({ city: objectId, isDeleted: true });
+    const deletedCity = await cityModel.findByIdAndDelete(objectId);
     return deletedCity;
   }
 
   public async getAllCitiesFrontendService() {
-    const cities = await cityModel.find({ status: true });
+    const cities = await cityModel.find({
+      status: true,
+      isDeleted: { $ne: true },
+    });
     return cities;
   }
 }
