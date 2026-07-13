@@ -117,9 +117,52 @@ class CityController {
     try {
       const { id } = req.params;
       const deletedCity = await this.cityService.deleteCityByIdService(id);
-      res.sendSuccess200Response("City deleted successfully", deletedCity);
+      res.sendSuccess200Response(
+        "City moved to trash successfully",
+        deletedCity,
+      );
     } catch (error) {
       res.sendErrorResponse("Error deleting city", error);
+    }
+  };
+
+  public getAllDeletedCities = async (req: Request, res: Response) => {
+    try {
+      const { searchValue, pageNo, recordPerPage } = req.query;
+      const result = await this.cityService.getAllDeletedCitiesService({
+        searchValue: searchValue as string,
+        pageNo: pageNo as string,
+        recordPerPage: recordPerPage as string,
+      });
+      res.sendSuccess200Response(
+        "Deleted cities retrieved successfully",
+        result,
+      );
+    } catch (error) {
+      logger.error("getAllDeletedCities", error);
+      res.sendErrorResponse("Error retrieving deleted cities", error);
+    }
+  };
+
+  public restoreCityById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const restoredCity = await this.cityService.restoreCityByIdService(id);
+      res.sendSuccess200Response("City restored successfully", restoredCity);
+    } catch (error) {
+      logger.error("restoreCityById", error);
+      res.sendErrorResponse("Error restoring city", error);
+    }
+  };
+
+  public hardDeleteCityById = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const deletedCity = await this.cityService.hardDeleteCityByIdService(id);
+      res.sendSuccess200Response("City deleted permanently", deletedCity);
+    } catch (error) {
+      logger.error("hardDeleteCityById", error);
+      res.sendErrorResponse("Error deleting city permanently", error);
     }
   };
 
