@@ -6,5 +6,5 @@ export interface EmployerBodyPaylaodFrontend {
   slectedCity: string | string[];
   pageNo?: number;
   recordPerPage?: number;
-  selectedRegion?: string;
+  // selectedRegion?: string; // REGION FEATURE DISABLED
 }

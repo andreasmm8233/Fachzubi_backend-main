@@ -31,7 +31,7 @@ const buildFullCompanyPayload = async (
     .findById(employerId)
     .populate("industryName", "industryName")
     .populate("city", "name address zipCode")
-    .populate("region", "regionName")
+    // .populate("region", "regionName") // REGION FEATURE DISABLED
     .populate({ path: "companyLogo", select: "_id filepath fileName" })
     .lean();
 
@@ -67,7 +67,7 @@ const buildFullCompanyPayload = async (
     cityName: employer.city?.name ?? "",
     cityAddress: employer.city?.address ?? "",
     cityZipCode: employer.city?.zipCode ?? "",
-    regionName: employer.region?.regionName ?? "",
+    // regionName: employer.region?.regionName ?? "", // REGION FEATURE DISABLED
     logoUrl: toAbsoluteUrl(employer.companyLogo?.filepath),
     companyImages,
     createdAt: employer.createdAt,
@@ -132,7 +132,7 @@ const buildFullJobPayload = async (
     .populate("company", "_id companyName")
     .populate("city", "name")
     .populate("industryName", "industryName")
-    .populate("region", "regionName")
+    // .populate("region", "regionName") // REGION FEATURE DISABLED
     .lean();
 
   if (!job) return null;
@@ -185,7 +185,7 @@ const buildFullJobPayload = async (
     cityNames,
     industryNames,
     industryName: industryNames.join(", "),
-    regionName: job.region?.regionName ?? "",
+    // regionName: job.region?.regionName ?? "", // REGION FEATURE DISABLED
     jobImages,
     attachments,
     createdAt: job.createdAt,

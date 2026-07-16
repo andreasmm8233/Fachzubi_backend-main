@@ -13,7 +13,7 @@ export const createJobSchema = Joi.object({
   jobDescription: Joi.string().required(),
   attachments: Joi.array(),
   status: Joi.boolean().default(false),
-  region: Joi.string().optional().allow("").allow(null),
+  // region: Joi.string().optional().allow("").allow(null), // REGION FEATURE DISABLED
   jobType: Joi.any().optional(),
 });
 
@@ -31,6 +31,6 @@ export const updateJobSchema = Joi.object({
   attachments: Joi.array(),
   deletedAttachment: Joi.any(),
   jobDescription: Joi.string(),
-  region: Joi.string().optional().allow("").allow(null),
+  // region: Joi.string().optional().allow("").allow(null), // REGION FEATURE DISABLED
   jobType: Joi.any().optional(),
 });

@@ -30,7 +30,7 @@ class JobController {
         isFillter,
         isFrontend,
         letter,
-        region,
+        // region, // REGION FEATURE DISABLED
       } = req.query;
       const creatorFilter = req.employee
         ? { createdBy: req.employee._id, createdByModel: "Employee" }
@@ -45,7 +45,7 @@ class JobController {
         isFrontend as string,
         creatorFilter,
         letter as string,
-        region as string,
+        // region as string, // REGION FEATURE DISABLED
       );
       res.sendSuccess200Response("Jobs retrieved successfully", result);
     } catch (error) {
@@ -96,11 +96,13 @@ class JobController {
       if (req.body.newCity) {
         req.body.city = req.body.newCity;
       }
-      if (req.body.region === "") {
-        req.body.region = null;
-      } else if (req.body.region && !/^[a-fA-F0-9]{24}$/.test(req.body.region)) {
-        delete req.body.region;
-      }
+      // REGION FEATURE DISABLED — ignore any region sent from the client on update.
+      delete req.body.region;
+      // if (req.body.region === "") {
+      //   req.body.region = null;
+      // } else if (req.body.region && !/^[a-fA-F0-9]{24}$/.test(req.body.region)) {
+      //   delete req.body.region;
+      // }
       const updatedJob = await this.jobService.updateJobByIdService(
         id,
         req.body,
@@ -163,7 +165,7 @@ class JobController {
         industryName,
         newCity: city,
         jobType,
-        region,
+        // region, // REGION FEATURE DISABLED
       } = req.body;
       if (!req.body.startTime) {
         req.body.startTime = null;
@@ -209,7 +211,8 @@ class JobController {
         industryName,
         videoLink,
         jobType,
-        region: (region && /^[a-fA-F0-9]{24}$/.test(region)) ? region : undefined,
+        // REGION FEATURE DISABLED — region no longer saved on create.
+        // region: (region && /^[a-fA-F0-9]{24}$/.test(region)) ? region : undefined,
       });
       const { removedFile } = req.body;
       const jobsImages = req.files?.jobsImages;

@@ -28,7 +28,8 @@ class EmployerController {
    */
   public getAllEmployers = async (req: Request, res: Response) => {
     try {
-      const { searchValue, pageNo, filter, recordPerPage, region } = req.query;
+      // REGION FEATURE DISABLED — region filter no longer read from the query.
+      const { searchValue, pageNo, filter, recordPerPage /*, region */ } = req.query;
       const creatorFilter = req.employee
         ? { createdBy: req.employee._id, createdByModel: "Employee" }
         : undefined;
@@ -38,7 +39,7 @@ class EmployerController {
         filter,
         recordPerPage,
         creatorFilter,
-        region as string,
+        // region as string, // REGION FEATURE DISABLED
       );
       const totalRecords = await this.employerService.getCount(creatorFilter);
       const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
@@ -109,13 +110,15 @@ class EmployerController {
         );
         req.body.companyLogo = mediaId ?? "";
       }
-      if (req.body.region === "") {
-        req.body.region = null;
-      } else if (req.body.region && !/^[a-fA-F0-9]{24}$/.test(req.body.region)) {
-        delete req.body.region;
-      } else if (req.body.region) {
-        req.body.region = this.objectIdConverter.convertToObjectId(req.body.region);
-      }
+      // REGION FEATURE DISABLED — ignore any region sent from the client on update.
+      delete req.body.region;
+      // if (req.body.region === "") {
+      //   req.body.region = null;
+      // } else if (req.body.region && !/^[a-fA-F0-9]{24}$/.test(req.body.region)) {
+      //   delete req.body.region;
+      // } else if (req.body.region) {
+      //   req.body.region = this.objectIdConverter.convertToObjectId(req.body.region);
+      // }
       const updatedEmployer =
         await this.employerService.updateEmployerByIdService(id, req.body);
       const { removedFile } = req.body;
@@ -174,7 +177,7 @@ class EmployerController {
         videoLink,
         city,
         status,
-        region,
+        // region, // REGION FEATURE DISABLED
       } = req.body;
       let companyLogo = "";
       if (req?.files?.companyLogo) {
@@ -206,7 +209,8 @@ class EmployerController {
         createdBy: _id,
         createdByModel,
         isDeleted: false,
-        region: (region && /^[a-fA-F0-9]{24}$/.test(region)) ? this.objectIdConverter.convertToObjectId(region) : undefined,
+        // REGION FEATURE DISABLED — region no longer saved on create.
+        // region: (region && /^[a-fA-F0-9]{24}$/.test(region)) ? this.objectIdConverter.convertToObjectId(region) : undefined,
         ...newPayloadCompanyLogo,
       });
       const { removedFile } = req.body;
@@ -262,7 +266,7 @@ class EmployerController {
         skip,
         pageNo,
         recordPerPage,
-        selectedRegion,
+        // selectedRegion, // REGION FEATURE DISABLED
       }: EmployerBodyPaylaodFrontend = <any>req.query;
       const data = await this.employerService.getAllEmployersForFrontendService(
         {
@@ -273,7 +277,7 @@ class EmployerController {
           skip,
           pageNo,
           recordPerPage,
-          selectedRegion,
+          // selectedRegion, // REGION FEATURE DISABLED
         },
       );
       res.sendSuccess200Response(" success", data);

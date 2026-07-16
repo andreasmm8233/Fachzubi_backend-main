@@ -18,7 +18,7 @@ export interface Employer {
   isDeleted?: boolean;
   createdBy?: Schema.Types.ObjectId;
   createdByModel?: "User" | "Employee";
-  region?: Schema.Types.ObjectId;
+  // region?: Schema.Types.ObjectId; // REGION FEATURE DISABLED
 }
 
 export interface EmployerDocument extends Employer, Document {
@@ -66,11 +66,12 @@ const employerSchema = new Schema<EmployerDocument>(
       required: true,
       refPath: "createdByModel",
     },
-    region: {
-      type: mongoose.Schema.Types.ObjectId,
-      required: false,
-      ref: "Region",
-    },
+    // REGION FEATURE DISABLED — company no longer stores a region reference.
+    // region: {
+    //   type: mongoose.Schema.Types.ObjectId,
+    //   required: false,
+    //   ref: "Region",
+    // },
   },
   {
     timestamps: true,

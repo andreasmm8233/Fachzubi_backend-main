@@ -12,7 +12,7 @@ import {
   jobTypesModel,
   mediaModel,
   userModel,
-  regionModel,
+  // regionModel, // REGION FEATURE DISABLED
 } from "../../models/index";
 import { type Job } from "../../models/jobs";
 import { type Application } from "../../models/jobApplication";
@@ -36,7 +36,7 @@ export class JobService {
     isFrontend: string,
     creatorFilter?: { createdBy: any; createdByModel: string },
     letter?: string,
-    region?: string,
+    // region?: string, // REGION FEATURE DISABLED
   ) {
     recordPerPage = recordPerPage ?? 10;
     recordPerPage = recordPerPage > 0 ? recordPerPage : 10;
@@ -45,10 +45,11 @@ export class JobService {
       filterQuery["industryName"] =
         this.objectIdConverter.convertToObjectId(industry);
     }
-    if (region) {
-      filterQuery["region"] =
-        this.objectIdConverter.convertToObjectId(region);
-    }
+    // REGION FEATURE DISABLED — jobs no longer filtered by region.
+    // if (region) {
+    //   filterQuery["region"] =
+    //     this.objectIdConverter.convertToObjectId(region);
+    // }
     if (slectedCity) {
       let cityIdsArray: string[] = [];
       if (typeof slectedCity === "string") {
@@ -228,7 +229,7 @@ export class JobService {
           companyId: { $first: "$company._id" },
           startDate: { $first: "$startDate" },
           count: { $first: "$count" },
-          region: { $first: "$region" },
+          // region: { $first: "$region" }, // REGION FEATURE DISABLED
           jobTypeName: { $first: "$jobTypeInfo.jobTypeName" },
         },
       },
@@ -614,35 +615,35 @@ export class JobService {
         },
       },
       // End
-      // start region lookup
-      {
-        $lookup: {
-          from: regionModel.collection.name,
-          let: { regionId: "$region" },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $eq: ["$_id", "$$regionId"],
-                },
-              },
-            },
-            {
-              $project: {
-                regionName: 1,
-                _id: 1,
-              },
-            },
-          ],
-          as: "regionDetail",
-        },
-      },
-      {
-        $unwind: {
-          path: "$regionDetail",
-          preserveNullAndEmptyArrays: true,
-        },
-      },
+      // REGION FEATURE DISABLED — start region lookup
+      // {
+      //   $lookup: {
+      //     from: regionModel.collection.name,
+      //     let: { regionId: "$region" },
+      //     pipeline: [
+      //       {
+      //         $match: {
+      //           $expr: {
+      //             $eq: ["$_id", "$$regionId"],
+      //           },
+      //         },
+      //       },
+      //       {
+      //         $project: {
+      //           regionName: 1,
+      //           _id: 1,
+      //         },
+      //       },
+      //     ],
+      //     as: "regionDetail",
+      //   },
+      // },
+      // {
+      //   $unwind: {
+      //     path: "$regionDetail",
+      //     preserveNullAndEmptyArrays: true,
+      //   },
+      // },
       // end region lookup
       {
         $group: {
@@ -672,7 +673,7 @@ export class JobService {
           companyImages: { $addToSet: "$companyImages" },
           videoLink: { $first: "$videoLink" },
           jobTypeName: { $first: "$jobTypeDetail.jobTypeName" },
-          region: { $first: "$regionDetail" },
+          // region: { $first: "$regionDetail" }, // REGION FEATURE DISABLED
         },
       },
     ]);

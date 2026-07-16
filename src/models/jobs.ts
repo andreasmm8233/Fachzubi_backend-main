@@ -17,7 +17,7 @@ export interface Job {
   industryName: Schema.Types.ObjectId[];
   videoLink: string[];
   jobType: Schema.Types.ObjectId[];
-  region?: Schema.Types.ObjectId;
+  // region?: Schema.Types.ObjectId; // REGION FEATURE DISABLED
 }
 
 export interface JobDocument extends Job, Document {
@@ -59,11 +59,12 @@ const jobSchema = new Schema<JobDocument>(
       required: true,
       refPath: "createdByModel",
     },
-    region: {
-      type: Schema.Types.ObjectId,
-      ref: "Region",
-      required: false,
-    },
+    // REGION FEATURE DISABLED — job no longer stores a region reference.
+    // region: {
+    //   type: Schema.Types.ObjectId,
+    //   ref: "Region",
+    //   required: false,
+    // },
   },
   {
     timestamps: true,

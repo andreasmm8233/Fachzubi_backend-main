@@ -29,7 +29,7 @@ export class EmployerService {
     filter: any,
     recordPerPage: any,
     creatorFilter?: { createdBy: any; createdByModel: string },
-    region?: string,
+    // region?: string, // REGION FEATURE DISABLED
   ) {
     const pipeline: any[] = [];
 
@@ -37,7 +37,8 @@ export class EmployerService {
       $match: {
         isDeleted: false,
         ...(creatorFilter ?? {}),
-        ...(region ? { region: this.objectIdConverter.convertToObjectId(region) } : {}),
+        // REGION FEATURE DISABLED — no longer filtering companies by region.
+        // ...(region ? { region: this.objectIdConverter.convertToObjectId(region) } : {}),
       },
     });
 
@@ -86,7 +87,7 @@ export class EmployerService {
         industryName: "$industryName.industryName",
         status: 1,
         city: "$city.name",
-        region: 1,
+        // region: 1, // REGION FEATURE DISABLED
       },
     });
 
@@ -157,7 +158,7 @@ export class EmployerService {
       .findById(id)
       .populate("industryName", "industryName")
       .populate("city", "name")
-      .populate("region", "regionName")
+      // .populate("region", "regionName") // REGION FEATURE DISABLED
       .populate({
         path: "companyLogo",
         select: "_id filepath",
@@ -314,9 +315,10 @@ export class EmployerService {
     const recordPerPage = Number(paylaod.recordPerPage) > 0 ? Number(paylaod.recordPerPage) : 10;
     const pageNo = Number(paylaod.pageNo) > 0 ? Number(paylaod.pageNo) : 1;
     const skip = (pageNo - 1) * recordPerPage;
-    if (paylaod.selectedRegion) {
-      filterQuery["region"] = this.objectIdConverter.convertToObjectId(paylaod.selectedRegion);
-    }
+    // REGION FEATURE DISABLED — frontend company list no longer filtered by region.
+    // if (paylaod.selectedRegion) {
+    //   filterQuery["region"] = this.objectIdConverter.convertToObjectId(paylaod.selectedRegion);
+    // }
     if (paylaod.slectedCity) {
       if (typeof paylaod.slectedCity === "string") {
         paylaod.slectedCity = [paylaod.slectedCity];
