@@ -23,11 +23,8 @@ class EmployerController {
     getAllEmployers = async (req, res) => {
         try {
             const { searchValue, pageNo, filter, recordPerPage } = req.query;
-            const creatorFilter = req.employee
-                ? { createdBy: req.employee._id, createdByModel: "Employee" }
-                : undefined;
-            const employers = await this.employerService.getAllEmployersService(searchValue, pageNo, filter, recordPerPage, creatorFilter);
-            const totalRecords = await this.employerService.getCount(creatorFilter);
+            const employers = await this.employerService.getAllEmployersService(searchValue, pageNo, filter, recordPerPage, undefined);
+            const totalRecords = await this.employerService.getCount();
             const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
             const count = Math.ceil(totalRecords / recordPerPageValue);
             res.sendSuccess200Response("Employers retrieved successfully", {
@@ -168,10 +165,7 @@ class EmployerController {
     getEmployerByCityAndIndustriesId = async (req, res) => {
         const { city } = req.params;
         try {
-            const creatorFilter = req.employee
-                ? { createdBy: req.employee._id, createdByModel: "Employee" }
-                : undefined;
-            const data = await this.employerService.getCompanyByCity(city, creatorFilter);
+            const data = await this.employerService.getCompanyByCity(city);
             res.sendSuccess200Response(" success", data);
         }
         catch (error) {
@@ -239,11 +233,8 @@ class EmployerController {
     getAllDeletedEmployers = async (req, res) => {
         try {
             const { searchValue, pageNo, recordPerPage } = req.query;
-            const creatorFilter = req.employee
-                ? { createdBy: req.employee._id, createdByModel: "Employee" }
-                : undefined;
-            const employers = await this.employerService.getAllDeletedEmployersService(searchValue, Number(pageNo), Number(recordPerPage), creatorFilter);
-            const totalRecords = await this.employerService.getDeletedCount(creatorFilter);
+            const employers = await this.employerService.getAllDeletedEmployersService(searchValue, Number(pageNo), Number(recordPerPage));
+            const totalRecords = await this.employerService.getDeletedCount();
             const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
             const count = Math.ceil(totalRecords / recordPerPageValue);
             res.sendSuccess200Response("Deleted employers retrieved successfully", {

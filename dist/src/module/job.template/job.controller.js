@@ -23,10 +23,7 @@ class JobController {
     getAllJobs = async (req, res) => {
         try {
             const { searchValue, pageNo, filter, recordPerPage, slectedCity, isFillter, isFrontend, letter, } = req.query;
-            const creatorFilter = req.employee
-                ? { createdBy: req.employee._id, createdByModel: "Employee" }
-                : undefined;
-            const result = await this.jobService.getAllJobsService(searchValue, Number(pageNo), filter, Number(recordPerPage), slectedCity, isFillter, isFrontend, creatorFilter, letter);
+            const result = await this.jobService.getAllJobsService(searchValue, Number(pageNo), filter, Number(recordPerPage), slectedCity, isFillter, isFrontend, undefined, letter);
             res.sendSuccess200Response("Jobs retrieved successfully", result);
         }
         catch (error) {
@@ -196,10 +193,7 @@ class JobController {
     getAllDeletedJobs = async (req, res) => {
         try {
             const { searchValue, pageNo, recordPerPage } = req.query;
-            const creatorFilter = req.employee
-                ? { createdBy: req.employee._id, createdByModel: "Employee" }
-                : undefined;
-            const result = await this.jobService.getAllDeletedJobsService(searchValue, Number(pageNo), Number(recordPerPage), creatorFilter);
+            const result = await this.jobService.getAllDeletedJobsService(searchValue, Number(pageNo), Number(recordPerPage));
             res.sendSuccess200Response("Deleted jobs retrieved successfully", result);
         }
         catch (error) {

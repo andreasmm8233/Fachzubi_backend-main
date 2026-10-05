@@ -1,21 +1,10 @@
 import express from "express";
 import EmployerController from "./employer.controller";
 import AuthMiddleware from "../../middleware/authenticator";
-import { employerModel } from "../../models/index";
 
 const employerRoute = express.Router();
 const employerController = new EmployerController();
 const authMiddleware = new AuthMiddleware();
-
-// Employees may only access companies they created themselves
-const ownEmployerByParam = authMiddleware.requireOwnership(
-  employerModel,
-  (req) => req.params.id,
-);
-const ownEmployerByQuery = authMiddleware.requireOwnership(
-  employerModel,
-  (req) => req.query.id,
-);
 
 employerRoute.get(
   "/",
@@ -33,13 +22,11 @@ employerRoute.put(
   "/:id",
   authMiddleware.requireUser,
   // joiValidator.validate(updateEmployerSchema, "body"),
-  ownEmployerByParam,
   employerController.updateEmployerById,
 );
 employerRoute.delete(
   "/",
   authMiddleware.requireUser,
-  ownEmployerByQuery,
   employerController.deleteEmployerById,
 );
 employerRoute.get(
@@ -67,20 +54,17 @@ employerRoute.get(
 employerRoute.post(
   "/restore/:id",
   authMiddleware.requireUser,
-  ownEmployerByParam,
   employerController.restoreEmployerById,
 );
 employerRoute.delete(
   "/hard-delete/:id",
   authMiddleware.requireUser,
-  ownEmployerByParam,
   employerController.hardDeleteEmployerById,
 );
 
 employerRoute.get(
   "/:id",
   authMiddleware.requireUser,
-  ownEmployerByParam,
   employerController.getEmployerById,
 );
 

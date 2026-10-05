@@ -32,9 +32,6 @@ class JobController {
         letter,
         // region, // REGION FEATURE DISABLED
       } = req.query;
-      const creatorFilter = req.employee
-        ? { createdBy: req.employee._id, createdByModel: "Employee" }
-        : undefined;
       const result = await this.jobService.getAllJobsService(
         searchValue as string,
         Number(pageNo),
@@ -43,7 +40,7 @@ class JobController {
         slectedCity as string[],
         isFillter as string,
         isFrontend as string,
-        creatorFilter,
+        undefined, // employees see all jobs, like admin
         letter as string,
         // region as string, // REGION FEATURE DISABLED
       );
@@ -256,14 +253,10 @@ class JobController {
   public getAllDeletedJobs = async (req: Request, res: Response) => {
     try {
       const { searchValue, pageNo, recordPerPage } = req.query;
-      const creatorFilter = req.employee
-        ? { createdBy: req.employee._id, createdByModel: "Employee" }
-        : undefined;
       const result = await this.jobService.getAllDeletedJobsService(
         searchValue as string,
         Number(pageNo),
         Number(recordPerPage),
-        creatorFilter,
       );
       res.sendSuccess200Response("Deleted jobs retrieved successfully", result);
     } catch (error) {
