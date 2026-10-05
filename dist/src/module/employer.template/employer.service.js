@@ -9,16 +9,18 @@ const models_1 = require("../../models");
 const ejs_1 = __importDefault(require("ejs"));
 const path_1 = __importDefault(require("path"));
 const emailService_1 = __importDefault(require("../../utils/emailService"));
+const logger_1 = __importDefault(require("../../utils/logger"));
 class EmployerService {
     objectIdConverter;
     constructor() {
         this.objectIdConverter = new objectIdConvertor_1.default();
     }
-    async getAllEmployersService(searchValue, pageNo, filter, recordPerPage) {
+    async getAllEmployersService(searchValue, pageNo, filter, recordPerPage, creatorFilter) {
         const pipeline = [];
         pipeline.push({
             $match: {
                 isDeleted: false,
+                ...(creatorFilter ?? {}),
             },
         });
         pipeline.push({
@@ -103,11 +105,9 @@ class EmployerService {
         const result = await models_1.employerModel.aggregate(pipeline).exec();
         return result[0] ? result[0].data : [];
     }
-    async getCount() {
+    async getCount(creatorFilter) {
         const employer = await models_1.employerModel
-            .find({
-            isDeleted: false,
-        })
+            .find({ isDeleted: false, ...(creatorFilter ?? {}) })
             .count();
         return employer;
     }
@@ -120,7 +120,7 @@ class EmployerService {
             .populate("city", "name")
             .populate({
             path: "companyLogo",
-            select: "_id",
+            select: "_id filepath",
         })
             .select("-industryName -city");
         if (employerDetail) {
@@ -170,6 +170,8 @@ class EmployerService {
     }
     async deleteEmployerByIdService(id) {
         const deletedEmployer = await models_1.employerModel.findByIdAndUpdate(id, { $set: { isDeleted: true } }, { new: true });
+        const jobResult = await models_1.jobModel.updateMany({ company: id, isDeleted: { $ne: true } }, { $set: { isDeleted: true } });
+        logger_1.default.info(`[deleteEmployer] Soft-deleted ${jobResult.modifiedCount} job(s) linked to company ${id}`);
         return deletedEmployer;
     }
     async addEmployerService(employerData) {
@@ -179,13 +181,14 @@ class EmployerService {
         });
         return newEmployer;
     }
-    async getCompanyByCity(cityId) {
+    async getCompanyByCity(cityId, creatorFilter) {
         const cityIdsArray = cityId.split(",");
         const objectIdCityIds = cityIdsArray.map((id) => this.objectIdConverter.convertToObjectId(id));
         const employers = await models_1.employerModel
             .find({
             city: { $in: objectIdCityIds.length ? objectIdCityIds : cityId },
             isDeleted: false,
+            ...(creatorFilter ?? {}),
         })
             .select("companyName");
         return employers;
@@ -236,7 +239,10 @@ class EmployerService {
     }
     async getAllEmployersForFrontendService(paylaod) {
         const filterQuery = {};
-        const skip = paylaod.skip ?? 0;
+        const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const recordPerPage = Number(paylaod.recordPerPage) > 0 ? Number(paylaod.recordPerPage) : 10;
+        const pageNo = Number(paylaod.pageNo) > 0 ? Number(paylaod.pageNo) : 1;
+        const skip = (pageNo - 1) * recordPerPage;
         if (paylaod.slectedCity) {
             if (typeof paylaod.slectedCity === "string") {
                 paylaod.slectedCity = [paylaod.slectedCity];
@@ -260,6 +266,15 @@ class EmployerService {
                     },
                 },
             ];
+        }
+        if (paylaod.letter) {
+            const normalizedLetter = String(paylaod.letter).trim();
+            if (normalizedLetter.length > 0) {
+                filterQuery["companyName"] = {
+                    $regex: `^${escapeRegex(normalizedLetter)}`,
+                    $options: "i",
+                };
+            }
         }
         const EmpList = await models_1.employerModel.aggregate([
             {
@@ -328,20 +343,33 @@ class EmployerService {
                 },
             },
             {
-                $skip: Number(skip),
-            },
-            {
-                $limit: 10,
-            },
-            {
                 $project: {
                     industryName: "$industryName.industryName",
                     companyName: 1,
-                    companyLogo: "$companyLogo.filepath",
+                    companyLogo: {
+                        $cond: {
+                            if: "$companyLogo",
+                            then: { _id: "$companyLogo._id", filepath: "$companyLogo.filepath" },
+                            else: null,
+                        },
+                    },
+                },
+            },
+            {
+                $facet: {
+                    metadata: [{ $count: "total" }],
+                    data: [{ $skip: skip }, { $limit: recordPerPage }],
                 },
             },
         ]);
-        return EmpList;
+        const total = EmpList[0]?.metadata[0]?.total ?? 0;
+        return {
+            data: EmpList[0]?.data ?? [],
+            total,
+            pageNo,
+            recordPerPage,
+            totalPages: Math.ceil(total / recordPerPage),
+        };
     }
     async getCompanyDetailService(companyId) {
         const [companyDetail] = await models_1.employerModel.aggregate([
@@ -421,6 +449,7 @@ class EmployerService {
                                 _id: 0,
                                 name: 1,
                                 address: 1,
+                                zipCode: 1,
                             },
                         },
                     ],
@@ -482,18 +511,75 @@ class EmployerService {
                 },
             },
             {
+                $lookup: {
+                    from: models_1.jobModel.collection.name,
+                    let: { companyId: "$_id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$company", "$$companyId"] },
+                                isDeleted: false,
+                                status: true,
+                            },
+                        },
+                        {
+                            $lookup: {
+                                from: models_1.jobTypesModel.collection.name,
+                                localField: "jobType",
+                                foreignField: "_id",
+                                as: "jobTypeDetail",
+                            },
+                        },
+                        { $unwind: { path: "$jobTypeDetail", preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: models_1.cityModel.collection.name,
+                                localField: "city",
+                                foreignField: "_id",
+                                as: "cityDetail",
+                            },
+                        },
+                        {
+                            $project: {
+                                _id: 1,
+                                jobTitle: 1,
+                                startDate: 1,
+                                status: 1,
+                                jobDescription: 1,
+                                address: 1,
+                                zipCode: 1,
+                                email: 1,
+                                jobType: "$jobTypeDetail.jobTypeName",
+                                city: "$cityDetail.name",
+                                createdAt: 1,
+                            },
+                        },
+                        { $sort: { createdAt: -1 } },
+                    ],
+                    as: "jobs",
+                },
+            },
+            {
                 $project: {
                     email: 1,
                     companyName: 1,
                     address: 1,
-                    zipCode: 1,
+                    zipCode: { $ifNull: ["$zipCode", "$city.zipCode"] },
+                    city: 1,
                     industryName: "$industryName.industryName",
                     contactPerson: 1,
-                    companyLogo: "$companyLogo.filepath",
+                    companyLogo: {
+                        $cond: {
+                            if: "$companyLogo",
+                            then: { _id: "$companyLogo._id", filepath: "$companyLogo.filepath" },
+                            else: null,
+                        },
+                    },
                     companyDescription: 1,
                     videoLink: 1,
                     website: 1,
                     phoneNo: 1,
+                    jobs: 1,
                     companyImages: {
                         $map: {
                             input: "$companyImages",
@@ -679,6 +765,76 @@ class EmployerService {
     async getAppoinmentCount() {
         const count = await models_1.appoinmentModel.count();
         return count;
+    }
+    async getAllDeletedEmployersService(searchValue, pageNo, recordPerPage, creatorFilter) {
+        const pipeline = [
+            {
+                $match: {
+                    isDeleted: true,
+                    ...(creatorFilter ?? {}),
+                }
+            },
+            {
+                $lookup: {
+                    from: models_1.cityModel.collection.name,
+                    localField: "city",
+                    foreignField: "_id",
+                    as: "cityInfo",
+                }
+            },
+            {
+                $project: {
+                    companyName: 1,
+                    email: 1,
+                    contactPerson: 1,
+                    createdAt: 1,
+                    city: "$cityInfo.name",
+                }
+            }
+        ];
+        if (searchValue) {
+            pipeline.push({
+                $match: {
+                    $or: [
+                        { companyName: { $regex: new RegExp(searchValue, "i") } },
+                        { email: { $regex: new RegExp(searchValue, "i") } },
+                        { contactPerson: { $regex: new RegExp(searchValue, "i") } },
+                    ]
+                }
+            });
+        }
+        const limit = recordPerPage || 10;
+        const skip = ((pageNo || 1) - 1) * limit;
+        pipeline.push({
+            $facet: {
+                metadata: [{ $count: "total" }],
+                data: [{ $skip: skip }, { $limit: limit }]
+            }
+        });
+        const result = await models_1.employerModel.aggregate(pipeline).exec();
+        const total = result[0]?.metadata[0]?.total ?? 0;
+        return {
+            data: result[0]?.data ?? [],
+            total,
+            pageNo: pageNo || 1,
+            recordPerPage: limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+    async getDeletedCount(creatorFilter) {
+        return await models_1.employerModel.countDocuments({ isDeleted: true, ...(creatorFilter ?? {}) });
+    }
+    async restoreEmployerByIdService(id) {
+        const objectId = this.objectIdConverter.convertToObjectId(id);
+        const restoredEmployer = await models_1.employerModel.findByIdAndUpdate(objectId, { $set: { isDeleted: false } }, { new: true });
+        const jobResult = await models_1.jobModel.updateMany({ company: objectId, isDeleted: true }, { $set: { isDeleted: false } });
+        logger_1.default.info(`[restoreEmployer] Restored ${jobResult.modifiedCount} job(s) linked to company ${id}`);
+        return restoredEmployer;
+    }
+    async hardDeleteEmployerByIdService(id) {
+        const objectId = this.objectIdConverter.convertToObjectId(id);
+        await models_1.jobModel.deleteMany({ company: objectId, isDeleted: true });
+        return await models_1.employerModel.findByIdAndDelete(objectId);
     }
 }
 exports.EmployerService = EmployerService;

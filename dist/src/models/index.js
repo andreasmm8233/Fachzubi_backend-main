@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.jobTypesModel = exports.jobImagesModel = exports.appoinmentModel = exports.applicationModel = exports.companyImageModel = exports.jobDocumentModel = exports.employerModel = exports.manageKeyModel = exports.manageContentModel = exports.smtpSettingModel = exports.jobModel = exports.cityModel = exports.industriesModel = exports.mediaModel = exports.userModel = exports.userSessionModel = void 0;
+exports.regionModel = exports.employeeSessionModel = exports.employeeModel = exports.jobTypesModel = exports.jobImagesModel = exports.appoinmentModel = exports.applicationModel = exports.companyImageModel = exports.jobDocumentModel = exports.employerModel = exports.manageKeyModel = exports.manageContentModel = exports.smtpSettingModel = exports.jobModel = exports.cityModel = exports.industriesModel = exports.mediaModel = exports.userModel = exports.userSessionModel = void 0;
 const session_1 = __importDefault(require("./session"));
 const user_1 = __importDefault(require("./user"));
 const media_1 = __importDefault(require("./media"));
@@ -20,6 +20,9 @@ const jobApplication_1 = __importDefault(require("./jobApplication"));
 const appoinment_1 = __importDefault(require("./appoinment"));
 const jobImages_1 = __importDefault(require("./jobImages"));
 const jobType_1 = __importDefault(require("./jobType"));
+const employee_1 = __importDefault(require("./employee"));
+const employee_session_1 = __importDefault(require("./employee.session"));
+const region_1 = __importDefault(require("./region"));
 exports.userSessionModel = session_1.default;
 exports.userModel = user_1.default;
 exports.mediaModel = media_1.default;
@@ -36,4 +39,7 @@ exports.applicationModel = jobApplication_1.default;
 exports.appoinmentModel = appoinment_1.default;
 exports.jobImagesModel = jobImages_1.default;
 exports.jobTypesModel = jobType_1.default;
+exports.employeeModel = employee_1.default;
+exports.employeeSessionModel = employee_session_1.default;
+exports.regionModel = region_1.default;
 //# sourceMappingURL=index.js.map

@@ -7,6 +7,7 @@ exports.AuthService = void 0;
 const jwt_1 = __importDefault(require("../../utils/jwt"));
 const user_service_1 = require("../user.template/user.service");
 const logger_1 = __importDefault(require("../../utils/logger"));
+const index_1 = require("../../models/index");
 class AuthService {
     jwtService = new jwt_1.default();
     userService;
@@ -25,18 +26,34 @@ class AuthService {
             if (!decoded) {
                 return null;
             }
-            const { sessionId } = decoded;
-            const userSession = await this.userService.getUserSessionDetailsBySessionId(sessionId);
-            if (!userSession?.isValidSession) {
-                return null;
+            const { sessionId, empSessionId } = decoded;
+            if (sessionId) {
+                const userSession = await this.userService.getUserSessionDetailsBySessionId(sessionId);
+                if (!userSession?.isValidSession) {
+                    return null;
+                }
+                const userDetails = await this.userService.findById(userSession.userId);
+                if (userDetails) {
+                    const accessTokenPayload = {
+                        sessionId: userSession._id,
+                    };
+                    const accessToken = this.createAccessToken(accessTokenPayload);
+                    return accessToken;
+                }
             }
-            const userDetails = await this.userService.findById(userSession.userId);
-            if (userDetails) {
-                const accessTokenPayload = {
-                    sessionId: userSession._id,
-                };
-                const accessToken = this.createAccessToken(accessTokenPayload);
-                return accessToken;
+            else if (empSessionId) {
+                const session = await index_1.employeeSessionModel.findOne({
+                    _id: empSessionId,
+                    isValidSession: true,
+                });
+                if (!session) {
+                    return null;
+                }
+                const employee = await index_1.employeeModel.findById(session.employeeId);
+                if (employee) {
+                    const accessToken = this.jwtService.sign({ empSessionId: String(session._id) }, { expiresIn: "1h" });
+                    return accessToken;
+                }
             }
             return null;
         }

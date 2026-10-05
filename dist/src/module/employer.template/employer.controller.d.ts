@@ -16,5 +16,8 @@ declare class EmployerController {
     getJobsByCompanyId: (req: Request, res: Response) => Promise<void>;
     getCompanyDetail: (req: Request, res: Response) => Promise<void>;
     addAppointment: (req: Request, res: Response) => Promise<void>;
+    getAllDeletedEmployers: (req: Request, res: Response) => Promise<void>;
+    restoreEmployerById: (req: Request, res: Response) => Promise<void>;
+    hardDeleteEmployerById: (req: Request, res: Response) => Promise<void>;
 }
 export default EmployerController;

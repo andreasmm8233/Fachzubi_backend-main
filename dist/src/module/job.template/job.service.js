@@ -5,28 +5,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.JobService = void 0;
 const objectIdConvertor_1 = __importDefault(require("../../utils/objectIdConvertor"));
+const mongoose_1 = __importDefault(require("mongoose"));
 const index_1 = require("../../models/index");
 const ejs_1 = __importDefault(require("ejs"));
 const path_1 = __importDefault(require("path"));
 const emailService_1 = __importDefault(require("../../utils/emailService"));
-const logger_1 = __importDefault(require("../../utils/logger"));
 class JobService {
     objectIdConverter;
     constructor() {
         this.objectIdConverter = new objectIdConvertor_1.default();
     }
-    slugifyCity(cityName) {
-        return encodeURIComponent(cityName
-            .trim()
-            .toLowerCase()
-            .replace(/\s+/g, "-")
-            .replace(/[^a-z0-9-]/g, ""));
-    }
-    buildQrCodeImageUrl(targetUrl) {
-        const encodedTarget = encodeURIComponent(targetUrl);
-        return `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodedTarget}`;
-    }
-    async getAllJobsService(searchValue, pageNo, filter, recordPerPage, slectedCity, industry, isFrontend) {
+    async getAllJobsService(searchValue, pageNo, filter, recordPerPage, slectedCity, industry, isFrontend, creatorFilter, letter) {
         recordPerPage = recordPerPage ?? 10;
         recordPerPage = recordPerPage > 0 ? recordPerPage : 10;
         const filterQuery = {};
@@ -35,16 +24,39 @@ class JobService {
                 this.objectIdConverter.convertToObjectId(industry);
         }
         if (slectedCity) {
+            let cityIdsArray = [];
             if (typeof slectedCity === "string") {
-                slectedCity = [slectedCity];
+                cityIdsArray = slectedCity.split(",").map((id) => id.trim()).filter(Boolean);
             }
-            filterQuery["cityInfo._id"] = {
-                $in: slectedCity.map((data) => this.objectIdConverter.convertToObjectId(data)),
-            };
+            else if (Array.isArray(slectedCity)) {
+                cityIdsArray = slectedCity.map((id) => String(id).trim()).filter(Boolean);
+            }
+            const selectedCityObjectIds = cityIdsArray
+                .filter((id) => mongoose_1.default.Types.ObjectId.isValid(id))
+                .map((id) => new mongoose_1.default.Types.ObjectId(id));
+            const cities = await index_1.cityModel.find({ _id: { $in: selectedCityObjectIds } });
+            const cityRegexes = cities.map((c) => new RegExp(`^${c.name.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`, "i"));
+            if (cityRegexes.length > 0) {
+                const allMatchingCities = await index_1.cityModel.find({
+                    name: { $in: cityRegexes }
+                });
+                const allMatchingCityIds = allMatchingCities.map((c) => c._id);
+                filterQuery["cityInfo._id"] = {
+                    $in: allMatchingCityIds,
+                };
+            }
+            else {
+                filterQuery["cityInfo._id"] = {
+                    $in: selectedCityObjectIds,
+                };
+            }
         }
         const pipeline = [
             {
-                $match: { isDeleted: false },
+                $match: {
+                    isDeleted: false,
+                    ...(creatorFilter ?? {}),
+                },
             },
             {
                 $match: {
@@ -120,6 +132,14 @@ class JobService {
             },
             {
                 $lookup: {
+                    from: index_1.jobTypesModel.collection.name,
+                    localField: "jobType",
+                    foreignField: "_id",
+                    as: "jobTypeInfo",
+                },
+            },
+            {
+                $lookup: {
                     from: index_1.applicationModel.collection.name,
                     let: { jobIds: "$_id" },
                     pipeline: [
@@ -154,8 +174,9 @@ class JobService {
                     jobTitle: { $first: "$jobTitle" },
                     createdAt: { $first: "$createdAt" },
                     city: { $addToSet: "$cityInfo.name" },
+                    cityNames: { $first: "$cityInfo.name" },
                     industryName: {
-                        $first: { $arrayElemAt: ["$industryInfo.industryName", 0] },
+                        $first: "$industryInfo.industryName",
                     },
                     status: { $first: "$status" },
                     company: { $first: "$company.companyName" },
@@ -163,7 +184,7 @@ class JobService {
                     companyId: { $first: "$company._id" },
                     startDate: { $first: "$startDate" },
                     count: { $first: "$count" },
-                    qrCode: { $first: "$qrCode" },
+                    jobTypeName: { $first: "$jobTypeInfo.jobTypeName" },
                 },
             },
             {
@@ -175,31 +196,42 @@ class JobService {
                 $match: {
                     $or: [
                         { jobTitle: { $regex: new RegExp(searchValue, "i") } },
-                        { city: { $regex: new RegExp(searchValue, "i") } },
+                        { cityNames: { $regex: new RegExp(searchValue, "i") } },
                         { industryName: { $regex: new RegExp(searchValue, "i") } },
                         { company: { $regex: new RegExp(searchValue, "i") } },
                     ],
                 },
             },
-            {
-                $skip: isFrontend ? 0 : (pageNo - 1) * recordPerPage || 0,
+            letter && {
+                $match: {
+                    jobTitle: { $regex: new RegExp(`^${letter}`, "i") },
+                },
             },
             {
-                $limit: isFrontend ? pageNo * recordPerPage : recordPerPage || 0,
+                $facet: {
+                    metadata: [{ $count: "total" }],
+                    data: [
+                        { $skip: isFrontend ? 0 : (pageNo - 1) * recordPerPage || 0 },
+                        { $limit: (isFrontend ? pageNo * recordPerPage : recordPerPage) || 10 },
+                    ],
+                },
             },
         ].filter(Boolean);
-        try {
-            const result = await index_1.jobModel.aggregate(pipeline).exec();
-            return result;
-        }
-        catch (error) {
-            return error;
-        }
+        const result = await index_1.jobModel.aggregate(pipeline).exec();
+        const total = result[0]?.metadata[0]?.total ?? 0;
+        const limit = recordPerPage || 10;
+        return {
+            data: result[0]?.data ?? [],
+            total,
+            pageNo: pageNo || 1,
+            recordPerPage: limit,
+            totalPages: Math.ceil(total / limit),
+        };
     }
-    async getCount() {
-        const jobCount = await index_1.jobModel.find().count({
-            isDeleted: false,
-        });
+    async getCount(creatorFilter) {
+        const jobCount = await index_1.jobModel
+            .find({ isDeleted: false, ...(creatorFilter ?? {}) })
+            .count();
         return jobCount;
     }
     async getJobByIdService(id) {
@@ -253,6 +285,7 @@ class JobService {
                                 companyLogo: 1,
                                 videoLink: 1,
                                 companyDescription: 1,
+                                website: 1,
                                 phoneNo: 1,
                             },
                         },
@@ -274,7 +307,22 @@ class JobService {
                         {
                             $match: {
                                 $expr: {
-                                    $eq: ["$_id", "$$industryId"],
+                                    $in: [
+                                        "$_id",
+                                        {
+                                            $cond: {
+                                                if: { $isArray: "$$industryId" },
+                                                then: "$$industryId",
+                                                else: {
+                                                    $cond: {
+                                                        if: { $eq: ["$$industryId", null] },
+                                                        then: [],
+                                                        else: ["$$industryId"],
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    ],
                                 },
                             },
                         },
@@ -289,12 +337,6 @@ class JobService {
                 },
             },
             {
-                $unwind: {
-                    path: "$industryName",
-                    preserveNullAndEmptyArrays: true,
-                },
-            },
-            {
                 $lookup: {
                     from: index_1.cityModel.collection.name,
                     let: { cityId: "$city" },
@@ -302,7 +344,22 @@ class JobService {
                         {
                             $match: {
                                 $expr: {
-                                    $in: ["$_id", "$$cityId"],
+                                    $in: [
+                                        "$_id",
+                                        {
+                                            $cond: {
+                                                if: { $isArray: "$$cityId" },
+                                                then: "$$cityId",
+                                                else: {
+                                                    $cond: {
+                                                        if: { $eq: ["$$cityId", null] },
+                                                        then: [],
+                                                        else: ["$$cityId"],
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    ],
                                 },
                             },
                         },
@@ -477,7 +534,22 @@ class JobService {
                                 $expr: {
                                     $and: [
                                         {
-                                            $eq: ["$_id", "$$documentId"],
+                                            $in: [
+                                                "$_id",
+                                                {
+                                                    $cond: {
+                                                        if: { $isArray: "$$documentId" },
+                                                        then: "$$documentId",
+                                                        else: {
+                                                            $cond: {
+                                                                if: { $eq: ["$$documentId", null] },
+                                                                then: [],
+                                                                else: ["$$documentId"],
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            ],
                                         },
                                         {
                                             $eq: ["$isDeleted", false],
@@ -488,12 +560,6 @@ class JobService {
                         },
                     ],
                     as: "jobTypeDetail",
-                },
-            },
-            {
-                $unwind: {
-                    path: "$jobTypeDetail",
-                    preserveNullAndEmptyArrays: true,
                 },
             },
             {
@@ -524,7 +590,6 @@ class JobService {
                     companyImages: { $addToSet: "$companyImages" },
                     videoLink: { $first: "$videoLink" },
                     jobTypeName: { $first: "$jobTypeDetail.jobTypeName" },
-                    qrCode: { $first: "$qrCode" },
                 },
             },
         ]);
@@ -542,22 +607,6 @@ class JobService {
     }
     async addJobService(jobData) {
         const newJob = await index_1.jobModel.create({ ...jobData, status: true });
-        try {
-            const cityList = Array.isArray(jobData.city) ? jobData.city : [jobData.city];
-            const firstCity = cityList?.[0];
-            if (firstCity) {
-                const city = await index_1.cityModel.findById(firstCity).select("name");
-                const citySlug = city?.name ? this.slugifyCity(city.name) : String(firstCity);
-                const frontendUrl = (process.env.FRONTEND_URL ?? "").replace(/\/+$/, "");
-                const jobUrl = `${frontendUrl}/jobs/${citySlug}`;
-                const qrCode = this.buildQrCodeImageUrl(jobUrl);
-                newJob.qrCode = qrCode;
-                await newJob.save();
-            }
-        }
-        catch (error) {
-            logger_1.default.error("addJobService-qrcode", error);
-        }
         return newJob;
     }
     async getSuggestionService(searchValue) {
@@ -725,6 +774,98 @@ class JobService {
     async getApplicationCount() {
         const count = await index_1.applicationModel.count();
         return count;
+    }
+    async getAllDeletedJobsService(searchValue, pageNo, recordPerPage, creatorFilter) {
+        const pipeline = [
+            {
+                $match: {
+                    isDeleted: true,
+                    ...(creatorFilter ?? {}),
+                }
+            },
+            {
+                $lookup: {
+                    from: index_1.employerModel.collection.name,
+                    let: { companyId: "$company" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: { $eq: ["$_id", "$$companyId"] }
+                            }
+                        },
+                        {
+                            $project: {
+                                companyName: 1
+                            }
+                        }
+                    ],
+                    as: "company",
+                }
+            },
+            {
+                $unwind: {
+                    path: "$company",
+                    preserveNullAndEmptyArrays: true,
+                }
+            },
+            {
+                $lookup: {
+                    from: index_1.cityModel.collection.name,
+                    localField: "city",
+                    foreignField: "_id",
+                    as: "cityInfo",
+                }
+            },
+            {
+                $project: {
+                    jobTitle: 1,
+                    createdAt: 1,
+                    company: "$company.companyName",
+                    companyId: "$company._id",
+                    city: "$cityInfo.name",
+                    status: 1,
+                }
+            }
+        ];
+        if (searchValue) {
+            pipeline.push({
+                $match: {
+                    $or: [
+                        { jobTitle: { $regex: new RegExp(searchValue, "i") } },
+                        { company: { $regex: new RegExp(searchValue, "i") } },
+                        { city: { $regex: new RegExp(searchValue, "i") } },
+                    ]
+                }
+            });
+        }
+        const limit = recordPerPage || 10;
+        const skip = ((pageNo || 1) - 1) * limit;
+        pipeline.push({
+            $facet: {
+                metadata: [{ $count: "total" }],
+                data: [{ $skip: skip }, { $limit: limit }]
+            }
+        });
+        const result = await index_1.jobModel.aggregate(pipeline).exec();
+        const total = result[0]?.metadata[0]?.total ?? 0;
+        return {
+            data: result[0]?.data ?? [],
+            total,
+            pageNo: pageNo || 1,
+            recordPerPage: limit,
+            totalPages: Math.ceil(total / limit),
+        };
+    }
+    async getDeletedCount(creatorFilter) {
+        return await index_1.jobModel.countDocuments({ isDeleted: true, ...(creatorFilter ?? {}) });
+    }
+    async restoreJobByIdService(id) {
+        const objectId = this.objectIdConverter.convertToObjectId(id);
+        return await index_1.jobModel.findByIdAndUpdate(objectId, { $set: { isDeleted: false } }, { new: true });
+    }
+    async hardDeleteJobByIdService(id) {
+        const objectId = this.objectIdConverter.convertToObjectId(id);
+        return await index_1.jobModel.findByIdAndDelete(objectId);
     }
 }
 exports.JobService = JobService;

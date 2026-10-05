@@ -8,6 +8,7 @@ const fileHandler_1 = require("../../utils/fileHandler");
 const logger_1 = __importDefault(require("../../utils/logger"));
 const objectIdConvertor_1 = __importDefault(require("../../utils/objectIdConvertor"));
 const companyImageHandler_1 = require("../../utils/companyImageHandler");
+const syncToAzubi_1 = require("../../utils/syncToAzubi");
 class EmployerController {
     employerService;
     fileHandler;
@@ -22,13 +23,17 @@ class EmployerController {
     getAllEmployers = async (req, res) => {
         try {
             const { searchValue, pageNo, filter, recordPerPage } = req.query;
-            const employers = await this.employerService.getAllEmployersService(searchValue, pageNo, filter, recordPerPage);
-            const totalRecords = await this.employerService.getCount();
+            const creatorFilter = req.employee
+                ? { createdBy: req.employee._id, createdByModel: "Employee" }
+                : undefined;
+            const employers = await this.employerService.getAllEmployersService(searchValue, pageNo, filter, recordPerPage, creatorFilter);
+            const totalRecords = await this.employerService.getCount(creatorFilter);
             const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
             const count = Math.ceil(totalRecords / recordPerPageValue);
             res.sendSuccess200Response("Employers retrieved successfully", {
                 employers,
                 count,
+                total: totalRecords,
             });
         }
         catch (error) {
@@ -59,17 +64,41 @@ class EmployerController {
             const companyImages = req.files?.companyImages;
             const { id } = req.params;
             if (req.body.companyLogo) {
-                req.body.companyLogo = this.objectIdConverter.convertToObjectId(req.body.companyLogo);
+                const raw = req.body.companyLogo;
+                let logoId;
+                if (typeof raw === "object" && raw !== null) {
+                    logoId = raw._id ? String(raw._id) : undefined;
+                }
+                else if (typeof raw === "string" && raw.startsWith("{")) {
+                    try {
+                        const parsed = JSON.parse(raw);
+                        logoId = parsed?._id ? String(parsed._id) : undefined;
+                    }
+                    catch {
+                        logoId = raw;
+                    }
+                }
+                else {
+                    logoId = raw;
+                }
+                if (logoId && /^[a-fA-F0-9]{24}$/.test(logoId)) {
+                    req.body.companyLogo = this.objectIdConverter.convertToObjectId(logoId);
+                }
+                else {
+                    delete req.body.companyLogo;
+                }
             }
             if (req?.files?.companyLogo) {
                 const mediaId = await this.fileHandler.saveFileAndCreateMedia(req.files.companyLogo);
                 req.body.companyLogo = mediaId ?? "";
             }
+            delete req.body.region;
             const updatedEmployer = await this.employerService.updateEmployerByIdService(id, req.body);
             const { removedFile } = req.body;
             if (updatedEmployer) {
                 await this.companyImageHandler.saveFileAndCreateMedia(companyImages, removedFile, updatedEmployer._id);
             }
+            (0, syncToAzubi_1.syncCompanyToAzubi)(updatedEmployer);
             res.sendSuccess200Response("Employer updated successfully", updatedEmployer);
         }
         catch (error) {
@@ -90,7 +119,9 @@ class EmployerController {
     };
     addEmployer = async (req, res) => {
         try {
-            const { _id } = req.user;
+            const creator = req.user || req.employee;
+            const _id = creator?._id;
+            const createdByModel = req.user ? "User" : "Employee";
             const companyImages = req.files?.["companyImages[]"];
             const { industryName, contactPerson, jobTitle, companyName, email, website, phoneNo, address, zipCode, companyDescription, videoLink, city, status, } = req.body;
             let companyLogo = "";
@@ -119,6 +150,7 @@ class EmployerController {
                 videoLink: JSON.parse(videoLink),
                 status,
                 createdBy: _id,
+                createdByModel,
                 isDeleted: false,
                 ...newPayloadCompanyLogo,
             });
@@ -126,6 +158,7 @@ class EmployerController {
             if (newEmployer) {
                 await this.companyImageHandler.saveFileAndCreateMedia(companyImages, removedFile, newEmployer._id);
             }
+            (0, syncToAzubi_1.syncCompanyToAzubi)(newEmployer);
             res.sendCreated201Response("Employer added successfully", newEmployer);
         }
         catch (error) {
@@ -135,7 +168,10 @@ class EmployerController {
     getEmployerByCityAndIndustriesId = async (req, res) => {
         const { city } = req.params;
         try {
-            const data = await this.employerService.getCompanyByCity(city);
+            const creatorFilter = req.employee
+                ? { createdBy: req.employee._id, createdByModel: "Employee" }
+                : undefined;
+            const data = await this.employerService.getCompanyByCity(city, creatorFilter);
             res.sendSuccess200Response(" success", data);
         }
         catch (error) {
@@ -154,8 +190,16 @@ class EmployerController {
     };
     getAllEmployersForFrontend = async (req, res) => {
         try {
-            const { searchValue, isFillter, slectedCity, skip, } = req.query;
-            const data = await this.employerService.getAllEmployersForFrontendService({ searchValue, isFillter, slectedCity, skip });
+            const { searchValue, isFillter, letter, slectedCity, skip, pageNo, recordPerPage, } = req.query;
+            const data = await this.employerService.getAllEmployersForFrontendService({
+                searchValue,
+                isFillter,
+                letter,
+                slectedCity,
+                skip,
+                pageNo,
+                recordPerPage,
+            });
             res.sendSuccess200Response(" success", data);
         }
         catch (error) {
@@ -190,6 +234,48 @@ class EmployerController {
         }
         catch (error) {
             res.sendErrorResponse("failed", error);
+        }
+    };
+    getAllDeletedEmployers = async (req, res) => {
+        try {
+            const { searchValue, pageNo, recordPerPage } = req.query;
+            const creatorFilter = req.employee
+                ? { createdBy: req.employee._id, createdByModel: "Employee" }
+                : undefined;
+            const employers = await this.employerService.getAllDeletedEmployersService(searchValue, Number(pageNo), Number(recordPerPage), creatorFilter);
+            const totalRecords = await this.employerService.getDeletedCount(creatorFilter);
+            const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
+            const count = Math.ceil(totalRecords / recordPerPageValue);
+            res.sendSuccess200Response("Deleted employers retrieved successfully", {
+                employers: employers.data,
+                count,
+            });
+        }
+        catch (error) {
+            logger_1.default.error("getAllDeletedEmployers", error);
+            res.sendErrorResponse("Error retrieving deleted employers", error);
+        }
+    };
+    restoreEmployerById = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const restoredEmployer = await this.employerService.restoreEmployerByIdService(id);
+            res.sendSuccess200Response("Employer restored successfully", restoredEmployer);
+        }
+        catch (error) {
+            logger_1.default.error("restoreEmployerById", error);
+            res.sendErrorResponse("Error restoring employer", error);
+        }
+    };
+    hardDeleteEmployerById = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const deletedEmployer = await this.employerService.hardDeleteEmployerByIdService(id);
+            res.sendSuccess200Response("Employer deleted permanently", deletedEmployer);
+        }
+        catch (error) {
+            logger_1.default.error("hardDeleteEmployerById", error);
+            res.sendErrorResponse("Error deleting employer permanently", error);
         }
     };
 }

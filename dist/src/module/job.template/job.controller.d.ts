@@ -12,5 +12,8 @@ declare class JobController {
     addJob: (req: Request, res: Response) => Promise<void>;
     getJobSuggestion: (req: Request, res: Response) => Promise<void>;
     addApplication: (req: Request, res: Response) => Promise<void>;
+    getAllDeletedJobs: (req: Request, res: Response) => Promise<void>;
+    restoreJobById: (req: Request, res: Response) => Promise<void>;
+    hardDeleteJobById: (req: Request, res: Response) => Promise<void>;
 }
 export default JobController;

@@ -2,14 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = require("mongoose");
 const jobSchema = new mongoose_1.Schema({
-    jobType: { type: mongoose_1.Schema.Types.ObjectId, required: false },
+    jobType: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "JobTypes", required: false }],
     videoLink: { type: [{ type: String }], required: false },
     city: [{ type: mongoose_1.Schema.Types.ObjectId, ref: "City", required: true }],
-    industryName: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: "Industries",
-        required: true,
-    },
+    industryName: [{
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: "Industries",
+            required: true,
+        }],
     company: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: "Employer",
@@ -24,7 +24,16 @@ const jobSchema = new mongoose_1.Schema({
     jobDescription: { type: String, required: true },
     status: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: false },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "User" },
+    createdByModel: {
+        type: String,
+        enum: ["User", "Employee"],
+        default: "User",
+    },
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        refPath: "createdByModel",
+    },
 }, {
     timestamps: true,
 });

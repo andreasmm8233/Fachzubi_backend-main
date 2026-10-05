@@ -40,6 +40,7 @@ export interface Employer {
     status?: boolean;
     isDeleted?: boolean;
     createdBy?: Schema.Types.ObjectId;
+    createdByModel?: "User" | "Employee";
 }
 export interface EmployerDocument extends Employer, Document {
     createdAt: Date;

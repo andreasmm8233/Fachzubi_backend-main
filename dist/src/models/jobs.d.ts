@@ -24,7 +24,7 @@
 /// <reference types="mongoose/types/inferschematype" />
 import { Schema, type Document } from "mongoose";
 export interface Job {
-    city: Schema.Types.ObjectId;
+    city: Schema.Types.ObjectId[];
     company: Schema.Types.ObjectId;
     jobTitle: string;
     startDate: Date;
@@ -35,10 +35,11 @@ export interface Job {
     jobDescription: string;
     status: boolean;
     createdBy: Schema.Types.ObjectId;
+    createdByModel?: "User" | "Employee";
     isDeleted: boolean;
-    industryName: Schema.Types.ObjectId;
+    industryName: Schema.Types.ObjectId[];
     videoLink: string[];
-    jobType: Schema.Types.ObjectId;
+    jobType: Schema.Types.ObjectId[];
 }
 export interface JobDocument extends Job, Document {
     createdAt: Date;

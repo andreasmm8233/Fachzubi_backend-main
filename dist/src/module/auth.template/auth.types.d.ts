@@ -6,7 +6,8 @@ export interface CreateSessionType {
     userAgent: string;
 }
 export interface JwtRefreshTokenPayload {
-    sessionId: string;
+    sessionId?: string;
+    empSessionId?: string;
 }
 export interface JwtAccessTokenPayload extends JwtRefreshTokenPayload {
 }

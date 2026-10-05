@@ -13,6 +13,8 @@ const manage_content_route_1 = __importDefault(require("../module/manage.contant
 const smtp_routes_1 = __importDefault(require("../module/smtp.template/smtp.routes"));
 const manageKey_route_1 = __importDefault(require("../module/manage.key.template/manageKey.route"));
 const job_types_route_1 = __importDefault(require("../module/job.type.template/job.types.route"));
+const manage_employee_route_1 = __importDefault(require("../module/manage.employee.template/manage.employee.route"));
+const region_routes_1 = __importDefault(require("../module/region.template/region.routes"));
 const router = [
     {
         prefix: "/auth",
@@ -25,6 +27,10 @@ const router = [
     {
         prefix: "/user",
         router: user_route_1.default,
+    },
+    {
+        prefix: "/regions",
+        router: region_routes_1.default,
     },
     {
         prefix: "/cities",
@@ -50,6 +56,10 @@ const router = [
     {
         prefix: "/job-type",
         router: job_types_route_1.default,
+    },
+    {
+        prefix: "/employees",
+        router: manage_employee_route_1.default,
     },
 ];
 exports.default = router;

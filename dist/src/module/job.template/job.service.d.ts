@@ -21,28 +21,58 @@
 /// <reference types="mongoose/types/utility" />
 /// <reference types="mongoose/types/validation" />
 /// <reference types="mongoose/types/virtuals" />
-/// <reference types="mongoose" />
 /// <reference types="mongoose/types/inferschematype" />
+import mongoose from "mongoose";
 import { type Job } from "../../models/jobs";
 import { type Application } from "../../models/jobApplication";
 export declare class JobService {
     private readonly objectIdConverter;
     constructor();
-    private slugifyCity;
-    private buildQrCodeImageUrl;
-    getAllJobsService(searchValue: string, pageNo: number, filter: string, recordPerPage: number, slectedCity: any, industry: string, isFrontend: string): Promise<any>;
-    getCount(): Promise<number>;
+    getAllJobsService(searchValue: string, pageNo: number, filter: string, recordPerPage: number, slectedCity: any, industry: string, isFrontend: string, creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }, letter?: string): Promise<{
+        data: any;
+        total: any;
+        pageNo: number;
+        recordPerPage: number;
+        totalPages: number;
+    }>;
+    getCount(creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<number>;
     getJobByIdService(id: string): Promise<any>;
-    updateJobByIdService(id: string, updatedData: Job): Promise<(import("mongoose").Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
-        _id: import("mongoose").Types.ObjectId;
+    updateJobByIdService(id: string, updatedData: Job): Promise<(mongoose.Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
+        _id: mongoose.Types.ObjectId;
     }) | null>;
-    deleteJobByIdService(id: string): Promise<(import("mongoose").Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
-        _id: import("mongoose").Types.ObjectId;
+    deleteJobByIdService(id: string): Promise<(mongoose.Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
+        _id: mongoose.Types.ObjectId;
     }) | null>;
-    addJobService(jobData: Job): Promise<import("mongoose").Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
-        _id: import("mongoose").Types.ObjectId;
+    addJobService(jobData: Job): Promise<mongoose.Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
+        _id: mongoose.Types.ObjectId;
     }>;
     getSuggestionService(searchValue: string): Promise<any>;
     addApplicationService(payload: Application): Promise<void>;
     getApplicationCount(): Promise<number>;
+    getAllDeletedJobsService(searchValue: string, pageNo: number, recordPerPage: number, creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<{
+        data: any;
+        total: any;
+        pageNo: number;
+        recordPerPage: number;
+        totalPages: number;
+    }>;
+    getDeletedCount(creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<number>;
+    restoreJobByIdService(id: string): Promise<(mongoose.Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
+        _id: mongoose.Types.ObjectId;
+    }) | null>;
+    hardDeleteJobByIdService(id: string): Promise<(mongoose.Document<unknown, {}, import("../../models/jobs").JobDocument> & import("../../models/jobs").JobDocument & {
+        _id: mongoose.Types.ObjectId;
+    }) | null>;
 }

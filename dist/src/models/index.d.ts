@@ -71,3 +71,12 @@ export declare const jobImagesModel: import("mongoose").Model<import("./jobImage
 export declare const jobTypesModel: import("mongoose").Model<import("./jobType").JobTypesDocument, {}, {}, {}, import("mongoose").Document<unknown, {}, import("./jobType").JobTypesDocument> & import("./jobType").JobTypesDocument & {
     _id: import("mongoose").Types.ObjectId;
 }, any>;
+export declare const employeeModel: import("mongoose").Model<import("./employee").EmployeeDocument, {}, {}, {}, import("mongoose").Document<unknown, {}, import("./employee").EmployeeDocument> & import("./employee").EmployeeDocument & {
+    _id: import("mongoose").Types.ObjectId;
+}, any>;
+export declare const employeeSessionModel: import("mongoose").Model<import("./employee.session").EmployeeSessionDocument, {}, {}, {}, import("mongoose").Document<unknown, {}, import("./employee.session").EmployeeSessionDocument> & import("./employee.session").EmployeeSessionDocument & {
+    _id: import("mongoose").Types.ObjectId;
+}, any>;
+export declare const regionModel: import("mongoose").Model<import("./region").RegionDocument, {}, {}, {}, import("mongoose").Document<unknown, {}, import("./region").RegionDocument> & import("./region").RegionDocument & {
+    _id: import("mongoose").Types.ObjectId;
+}, any>;

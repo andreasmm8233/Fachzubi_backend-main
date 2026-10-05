@@ -15,15 +15,15 @@ class FileHandler {
                 throw new Error("Invalid buffer type");
             }
             const actualFileName = file.name;
-            const fileName = Date.now() + "-" + file.name;
-            const filePath = path_1.default.join("public", fileName).replace(/\\/g, "/");
-            await promises_1.default.mkdir(path_1.default.join(__dirname, "../../public"), { recursive: true });
-            await promises_1.default.writeFile(filePath, file.data);
-            const fileType = file.mimetype;
+            const fileName = `${Date.now()}-${file.name}`;
+            const publicDir = path_1.default.join(process.cwd(), "public");
+            const absoluteFilePath = path_1.default.join(publicDir, fileName);
+            await promises_1.default.mkdir(publicDir, { recursive: true });
+            await promises_1.default.writeFile(absoluteFilePath, file.data);
             const mediaData = {
-                type: fileType,
+                type: file.mimetype,
                 fileName: actualFileName,
-                filepath: filePath.replace(/^public\//, ""),
+                filepath: fileName,
             };
             const createdMedia = await index_1.mediaModel.create(mediaData);
             return createdMedia._id;

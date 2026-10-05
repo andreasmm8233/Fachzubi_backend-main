@@ -52,9 +52,18 @@ const employerSchema = new mongoose_1.Schema({
     },
     status: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: true },
-    createdBy: { type: mongoose_1.Schema.Types.ObjectId, required: true, ref: "User" },
+    createdByModel: {
+        type: String,
+        enum: ["User", "Employee"],
+        default: "User",
+    },
+    createdBy: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        required: true,
+        refPath: "createdByModel",
+    },
 }, {
-    timestamps: false,
+    timestamps: true,
 });
 const _EmployerModel = (0, mongoose_1.model)("Employer", employerSchema);
 exports.default = _EmployerModel;

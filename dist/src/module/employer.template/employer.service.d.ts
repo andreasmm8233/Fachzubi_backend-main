@@ -29,8 +29,14 @@ import { type Appoinment } from "src/models/appoinment";
 export declare class EmployerService {
     private readonly objectIdConverter;
     constructor();
-    getAllEmployersService(searchValue: any, pageNo: any, filter: any, recordPerPage: any): Promise<any>;
-    getCount(): Promise<number>;
+    getAllEmployersService(searchValue: any, pageNo: any, filter: any, recordPerPage: any, creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<any>;
+    getCount(creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<number>;
     getEmployerByIdService(id: string): Promise<{
         employerDetail: (import("mongoose").Document<unknown, {}, import("src/models/employer").EmployerDocument> & import("src/models/employer").EmployerDocument & {
             _id: import("mongoose").Types.ObjectId;
@@ -46,13 +52,42 @@ export declare class EmployerService {
     addEmployerService(employerData: Employer): Promise<import("mongoose").Document<unknown, {}, import("src/models/employer").EmployerDocument> & import("src/models/employer").EmployerDocument & {
         _id: import("mongoose").Types.ObjectId;
     }>;
-    getCompanyByCity(cityId: string): Promise<(import("mongoose").Document<unknown, {}, import("src/models/employer").EmployerDocument> & import("src/models/employer").EmployerDocument & {
+    getCompanyByCity(cityId: string, creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<(import("mongoose").Document<unknown, {}, import("src/models/employer").EmployerDocument> & import("src/models/employer").EmployerDocument & {
         _id: import("mongoose").Types.ObjectId;
     })[]>;
     getSuggesstionService(suggesstion: string): Promise<any[]>;
-    getAllEmployersForFrontendService(paylaod: EmployerBodyPaylaodFrontend): Promise<any[]>;
+    getAllEmployersForFrontendService(paylaod: EmployerBodyPaylaodFrontend): Promise<{
+        data: any;
+        total: any;
+        pageNo: number;
+        recordPerPage: number;
+        totalPages: number;
+    }>;
     getCompanyDetailService(companyId: string): Promise<any>;
     getJobsByCompanyIdService(companyId: string, skip: number): Promise<any[]>;
     addAppoinmentService(paylaod: Appoinment): Promise<void>;
     getAppoinmentCount(): Promise<number>;
+    getAllDeletedEmployersService(searchValue: string, pageNo: number, recordPerPage: number, creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<{
+        data: any;
+        total: any;
+        pageNo: number;
+        recordPerPage: number;
+        totalPages: number;
+    }>;
+    getDeletedCount(creatorFilter?: {
+        createdBy: any;
+        createdByModel: string;
+    }): Promise<number>;
+    restoreEmployerByIdService(id: string): Promise<(import("mongoose").Document<unknown, {}, import("src/models/employer").EmployerDocument> & import("src/models/employer").EmployerDocument & {
+        _id: import("mongoose").Types.ObjectId;
+    }) | null>;
+    hardDeleteEmployerByIdService(id: string): Promise<(import("mongoose").Document<unknown, {}, import("src/models/employer").EmployerDocument> & import("src/models/employer").EmployerDocument & {
+        _id: import("mongoose").Types.ObjectId;
+    }) | null>;
 }

@@ -72,7 +72,7 @@ export class EmployeeService {
   public async deleteEmployee(id: string) {
     const employee = await employeeModel.findByIdAndDelete(id).select("-password");
     if (employee) {
-      await employeeSessionModel.deleteMany({ employeeId: employee._id });
+      await employeeSessionModel.deleteMany({ employeeId: id });
     }
     return employee;
   }

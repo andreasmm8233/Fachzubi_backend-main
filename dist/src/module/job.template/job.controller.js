@@ -8,6 +8,7 @@ const logger_1 = __importDefault(require("../../utils/logger"));
 const fileHandler_1 = require("../../utils/fileHandler");
 const job_documents_service_1 = require("./job.documents.service");
 const jobsImageHandler_1 = require("../../utils/jobsImageHandler");
+const syncToAzubi_1 = require("../../utils/syncToAzubi");
 class JobController {
     jobService;
     fileHandler;
@@ -21,15 +22,12 @@ class JobController {
     }
     getAllJobs = async (req, res) => {
         try {
-            const { searchValue, pageNo, filter, recordPerPage, slectedCity, isFillter, isFrontend, } = req.query;
-            const jobs = await this.jobService.getAllJobsService(searchValue, Number(pageNo), filter, Number(recordPerPage), slectedCity, isFillter, isFrontend);
-            const totalRecords = await this.jobService.getCount();
-            const recordPerPageValue = recordPerPage ? Number(recordPerPage) : 10;
-            const count = Math.ceil(totalRecords / recordPerPageValue);
-            res.sendSuccess200Response("Jobs retrieved successfully", {
-                jobs,
-                count,
-            });
+            const { searchValue, pageNo, filter, recordPerPage, slectedCity, isFillter, isFrontend, letter, } = req.query;
+            const creatorFilter = req.employee
+                ? { createdBy: req.employee._id, createdByModel: "Employee" }
+                : undefined;
+            const result = await this.jobService.getAllJobsService(searchValue, Number(pageNo), filter, Number(recordPerPage), slectedCity, isFillter, isFrontend, creatorFilter, letter);
+            res.sendSuccess200Response("Jobs retrieved successfully", result);
         }
         catch (error) {
             logger_1.default.error("getAllJobs", error);
@@ -79,6 +77,7 @@ class JobController {
             if (req.body.newCity) {
                 req.body.city = req.body.newCity;
             }
+            delete req.body.region;
             const updatedJob = await this.jobService.updateJobByIdService(id, req.body);
             const { removedFile } = req.body;
             const jobsImages = req.files?.jobsImages;
@@ -94,6 +93,7 @@ class JobController {
                     : [req.body?.deletedAttachment];
                 await this.jobDocumentService.deleteDocuments(deletedAttachments);
             }
+            (0, syncToAzubi_1.syncJobToAzubi)(updatedJob);
             res.sendSuccess200Response("Job updated successfully", updatedJob);
         }
         catch (error) {
@@ -112,7 +112,9 @@ class JobController {
     };
     addJob = async (req, res) => {
         try {
-            const { _id } = req.user;
+            const creator = req.user || req.employee;
+            const _id = creator?._id;
+            const createdByModel = req.user ? "User" : "Employee";
             const { company, jobTitle, email, additionalEmail, address, zipCode, jobDescription, status, isDeleted, industryName, newCity: city, jobType, } = req.body;
             if (!req.body.startTime) {
                 req.body.startTime = null;
@@ -153,6 +155,7 @@ class JobController {
                 jobDescription,
                 status,
                 createdBy: _id,
+                createdByModel,
                 isDeleted,
                 industryName,
                 videoLink,
@@ -164,6 +167,7 @@ class JobController {
                 await this.jobImageHandler.saveFileAndCreateMedia(jobsImages, removedFile, newJob._id);
             }
             await this.jobDocumentService.addDocuments(attachments, newJob._id);
+            (0, syncToAzubi_1.syncJobToAzubi)(newJob);
             res.sendCreated201Response("Job added successfully", newJob);
         }
         catch (error) {
@@ -187,6 +191,42 @@ class JobController {
         }
         catch (error) {
             res.sendErrorResponse("error", error);
+        }
+    };
+    getAllDeletedJobs = async (req, res) => {
+        try {
+            const { searchValue, pageNo, recordPerPage } = req.query;
+            const creatorFilter = req.employee
+                ? { createdBy: req.employee._id, createdByModel: "Employee" }
+                : undefined;
+            const result = await this.jobService.getAllDeletedJobsService(searchValue, Number(pageNo), Number(recordPerPage), creatorFilter);
+            res.sendSuccess200Response("Deleted jobs retrieved successfully", result);
+        }
+        catch (error) {
+            logger_1.default.error("getAllDeletedJobs", error);
+            res.sendErrorResponse("Error retrieving deleted jobs", error);
+        }
+    };
+    restoreJobById = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const restoredJob = await this.jobService.restoreJobByIdService(id);
+            res.sendSuccess200Response("Job restored successfully", restoredJob);
+        }
+        catch (error) {
+            logger_1.default.error("restoreJobById", error);
+            res.sendErrorResponse("Error restoring job", error);
+        }
+    };
+    hardDeleteJobById = async (req, res) => {
+        try {
+            const { id } = req.params;
+            const deletedJob = await this.jobService.hardDeleteJobByIdService(id);
+            res.sendSuccess200Response("Job deleted permanently", deletedJob);
+        }
+        catch (error) {
+            logger_1.default.error("hardDeleteJobById", error);
+            res.sendErrorResponse("Error deleting job permanently", error);
         }
     };
 }

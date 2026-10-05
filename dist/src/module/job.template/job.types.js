@@ -7,7 +7,7 @@ exports.updateJobSchema = exports.createJobSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.createJobSchema = joi_1.default.object({
     newCity: joi_1.default.any().required(),
-    industryName: joi_1.default.string().required(),
+    industryName: joi_1.default.any().required(),
     company: joi_1.default.string().required(),
     jobTitle: joi_1.default.string().required(),
     email: joi_1.default.string().email().required(),
@@ -17,11 +17,12 @@ exports.createJobSchema = joi_1.default.object({
     jobDescription: joi_1.default.string().required(),
     attachments: joi_1.default.array(),
     status: joi_1.default.boolean().default(false),
+    jobType: joi_1.default.any().optional(),
 });
 exports.updateJobSchema = joi_1.default.object({
     id: joi_1.default.string(),
-    city: joi_1.default.string(),
-    industryName: joi_1.default.string(),
+    city: joi_1.default.any(),
+    industryName: joi_1.default.any(),
     company: joi_1.default.string(),
     jobTitle: joi_1.default.string(),
     email: joi_1.default.string().email(),
@@ -31,5 +32,6 @@ exports.updateJobSchema = joi_1.default.object({
     attachments: joi_1.default.array(),
     deletedAttachment: joi_1.default.any(),
     jobDescription: joi_1.default.string(),
+    jobType: joi_1.default.any().optional(),
 });
 //# sourceMappingURL=job.types.js.map

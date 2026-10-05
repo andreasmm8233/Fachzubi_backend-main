@@ -22,7 +22,7 @@
 /// <reference types="mongoose/types/validation" />
 /// <reference types="mongoose/types/virtuals" />
 /// <reference types="mongoose/types/inferschematype" />
-import { type Document } from "mongoose";
+import mongoose, { type Document } from "mongoose";
 export interface City {
     name: string;
     isDeleted: boolean;
@@ -32,12 +32,16 @@ export interface City {
     zipCode: string;
     directionLink: string;
     status: boolean;
+    qrCode?: string;
+    qrTargetUrl?: string;
+    createdBy?: mongoose.Schema.Types.ObjectId;
+    createdByModel?: "User" | "Employee";
 }
 export interface CityDocument extends City, Document {
     createdAt: Date;
     updatedAt: Date;
 }
-declare const CityModel: import("mongoose").Model<CityDocument, {}, {}, {}, Document<unknown, {}, CityDocument> & CityDocument & {
-    _id: import("mongoose").Types.ObjectId;
+declare const CityModel: mongoose.Model<CityDocument, {}, {}, {}, mongoose.Document<unknown, {}, CityDocument> & CityDocument & {
+    _id: mongoose.Types.ObjectId;
 }, any>;
 export default CityModel;
