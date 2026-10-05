@@ -29,14 +29,22 @@ export class CityService {
     return `${base}${encodeURIComponent(id)}/${parts.join("/")}`;
   }
 
-  public async getAllCitiesService() {
-    const cities = await cityModel.find({ isDeleted: { $ne: true } });
+  public async getAllCitiesService(
+    creatorFilter?: { createdBy: any; createdByModel: string },
+  ) {
+    const cities = await cityModel.find({
+      isDeleted: { $ne: true },
+      ...(creatorFilter ?? {}),
+    });
     return cities;
   }
 
   public async getAllCitiesByFilter(payload) {
-    const { searchValue, pageNo, recordPerPage } = payload;
-    const filter: Record<string, any> = { isDeleted: false };
+    const { searchValue, pageNo, recordPerPage, creatorFilter } = payload;
+    const filter: Record<string, any> = {
+      isDeleted: false,
+      ...(creatorFilter ?? {}),
+    };
     if (searchValue) {
       filter.name = { $regex: new RegExp(searchValue, "i") };
     }
@@ -223,9 +231,13 @@ export class CityService {
     searchValue?: string;
     pageNo?: string | number;
     recordPerPage?: string | number;
+    creatorFilter?: { createdBy: any; createdByModel: string };
   }) {
-    const { searchValue, pageNo, recordPerPage } = payload;
-    const filter: Record<string, any> = { isDeleted: true };
+    const { searchValue, pageNo, recordPerPage, creatorFilter } = payload;
+    const filter: Record<string, any> = {
+      isDeleted: true,
+      ...(creatorFilter ?? {}),
+    };
     if (searchValue) {
       filter.name = { $regex: new RegExp(searchValue, "i") };
     }

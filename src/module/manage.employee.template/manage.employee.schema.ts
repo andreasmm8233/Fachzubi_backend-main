@@ -7,6 +7,7 @@ const permissionsSchema = Joi.object({
   manage_industries: Joi.boolean(),
   job_types: Joi.boolean(),
   manage_content: Joi.boolean(),
+  manage_trash: Joi.boolean(),
 });
 
 export const createEmployeeValidator = Joi.object({
@@ -28,6 +29,9 @@ export const updateEmployeeValidator = Joi.object({
   email: Joi.string().email(),
   isActive: Joi.boolean(),
   password: Joi.string().min(8),
+  confirm_password: Joi.string()
+    .valid(Joi.ref("password"))
+    .messages({ "any.only": "Passwords do not match" }),
   permissions: permissionsSchema,
 });
 

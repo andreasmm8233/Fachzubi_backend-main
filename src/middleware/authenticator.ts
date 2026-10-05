@@ -1,4 +1,5 @@
 import { type Request, type Response, type NextFunction } from "express";
+import mongoose, { type Model } from "mongoose";
 import JwtService from "../utils/jwt";
 import { UserService } from "../module/user.template/user.service";
 import { employeeModel, employeeSessionModel } from "../models/index";
@@ -87,6 +88,40 @@ class AuthMiddleware {
       }
       // Not authenticated — let the route's own requireUser handle it
       next();
+    };
+
+  // Admin and unauthenticated (public) requests pass; an employee may only
+  // touch records they created themselves.
+  requireOwnership =
+    (model: Model<any>, getId: (req: Request) => unknown) =>
+    async (req: Request, res: Response, next: NextFunction) => {
+      if (req.user || !req.employee) {
+        next();
+        return;
+      }
+      try {
+        const id = getId(req);
+        if (typeof id !== "string" || !mongoose.isValidObjectId(id)) {
+          res.sendNotFound404Response("Record not found", null);
+          return;
+        }
+        const owned = await model.exists({
+          _id: id,
+          createdBy: req.employee._id,
+          createdByModel: "Employee",
+        });
+        if (owned) {
+          next();
+        } else {
+          res.sendForbidden403Response(
+            "You can only access records you created",
+            null,
+          );
+        }
+      } catch (error) {
+        logger.error("requireOwnership", error);
+        res.sendErrorResponse("Error checking record ownership", error);
+      }
     };
 }
 

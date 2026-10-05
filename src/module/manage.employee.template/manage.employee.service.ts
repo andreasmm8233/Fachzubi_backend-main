@@ -35,6 +35,8 @@ export class EmployeeService {
       isDeleted: false,
     });
     if (existing) throw new Error("An employee with this email already exists");
+    // Clear out legacy soft-deleted records so the unique email index doesn't block reuse
+    await employeeModel.deleteMany({ email: employeeData.email, isDeleted: true });
     const employee = await employeeModel.create(employeeData);
     const result = employee.toObject() as any;
     delete result.password;
@@ -53,15 +55,26 @@ export class EmployeeService {
     }
     const employee = await employeeModel.findByIdAndUpdate(id, updateData, { new: true });
     if (!employee) return null;
+    if (updateData.password) {
+      // Log the employee out everywhere once their password changes
+      await employeeSessionModel.updateMany(
+        { employeeId: employee._id },
+        { isValidSession: false },
+      );
+    }
     const result = employee.toObject() as any;
     delete result.password;
     return result;
   }
 
+  // Permanently removes the employee and their sessions. Jobs, companies and
+  // cities they created are intentionally left untouched.
   public async deleteEmployee(id: string) {
-    return await employeeModel
-      .findByIdAndUpdate(id, { isDeleted: true }, { new: true })
-      .select("-password");
+    const employee = await employeeModel.findByIdAndDelete(id).select("-password");
+    if (employee) {
+      await employeeSessionModel.deleteMany({ employeeId: employee._id });
+    }
+    return employee;
   }
 
   public async loginEmployee(

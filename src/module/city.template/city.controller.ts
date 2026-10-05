@@ -9,9 +9,12 @@ class CityController {
     this.cityService = new CityService();
   }
 
-  public getAllCities = async (_: Request, res: Response) => {
+  public getAllCities = async (req: Request, res: Response) => {
     try {
-      const cities = await this.cityService.getAllCitiesService();
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
+      const cities = await this.cityService.getAllCitiesService(creatorFilter);
       res.sendSuccess200Response("Cities retrieved successfully", cities);
     } catch (error) {
       logger.error("getAllCities", error);
@@ -22,7 +25,10 @@ class CityController {
   public getAllCitiesByFilter = async (req: Request, res: Response) => {
     try {
       const { searchValue, pageNo, recordPerPage } = req.query;
-      const payload = { searchValue, pageNo, recordPerPage };
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
+      const payload = { searchValue, pageNo, recordPerPage, creatorFilter };
       const cities = await this.cityService.getAllCitiesByFilter(payload);
       res.sendSuccess200Response("Cities retrieved successfully", cities);
     } catch (error) {
@@ -129,10 +135,14 @@ class CityController {
   public getAllDeletedCities = async (req: Request, res: Response) => {
     try {
       const { searchValue, pageNo, recordPerPage } = req.query;
+      const creatorFilter = req.employee
+        ? { createdBy: req.employee._id, createdByModel: "Employee" }
+        : undefined;
       const result = await this.cityService.getAllDeletedCitiesService({
         searchValue: searchValue as string,
         pageNo: pageNo as string,
         recordPerPage: recordPerPage as string,
+        creatorFilter,
       });
       res.sendSuccess200Response(
         "Deleted cities retrieved successfully",
