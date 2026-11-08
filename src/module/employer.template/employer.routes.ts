@@ -63,6 +63,12 @@ employerRoute.delete(
 );
 
 employerRoute.get(
+  "/:id/download-qr",
+  authMiddleware.requireUser,
+  employerController.downloadEmployerQrCode,
+);
+
+employerRoute.get(
   "/:id",
   authMiddleware.requireUser,
   employerController.getEmployerById,

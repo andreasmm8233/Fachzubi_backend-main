@@ -17,6 +17,7 @@ import ejs from "ejs";
 import path from "path";
 import emailService from "../../utils/emailService";
 import logger from "../../utils/logger";
+import { buildCompanyQrData } from "../../utils/companyQr";
 export class EmployerService {
   private readonly objectIdConverter: ObjectIdConverter;
   constructor() {
@@ -87,6 +88,8 @@ export class EmployerService {
         industryName: "$industryName.industryName",
         status: 1,
         city: "$city.name",
+        qrCode: 1,
+        qrTargetUrl: 1,
         // region: 1, // REGION FEATURE DISABLED
       },
     });
@@ -140,8 +143,13 @@ export class EmployerService {
 
     const result = await employerModel.aggregate(pipeline).exec();
 
-    // Return the result
-    return result[0] ? result[0].data : [];
+    // Companies created before QR codes existed get one built on the fly.
+    const employers = result[0] ? result[0].data : [];
+    return employers.map((employer: any) =>
+      employer.qrCode
+        ? employer
+        : { ...employer, ...buildCompanyQrData(String(employer._id)) },
+    );
   }
 
   public async getCount(creatorFilter?: { createdBy: any; createdByModel: string }) {
@@ -204,6 +212,17 @@ export class EmployerService {
     return { employerDetail, images };
   }
 
+  public async getEmployerQrService(id: string) {
+    const employer = await employerModel
+      .findById(id)
+      .select("companyName qrCode qrTargetUrl");
+    if (employer && !employer.qrCode) {
+      Object.assign(employer, buildCompanyQrData(String(employer._id)));
+      await employer.save();
+    }
+    return employer;
+  }
+
   public async updateEmployerByIdService(id: string, updatedData: Employer) {
     const updatedEmployer = await employerModel.findByIdAndUpdate(
       id,
@@ -240,6 +259,8 @@ export class EmployerService {
       ...employerData,
       status: true,
     });
+    Object.assign(newEmployer, buildCompanyQrData(String(newEmployer._id)));
+    await newEmployer.save();
     return newEmployer;
   }
 

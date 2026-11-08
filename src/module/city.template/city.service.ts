@@ -2,8 +2,6 @@ import { type Schema, Types } from "mongoose";
 import { cityModel, jobModel, employerModel } from "../../models/index";
 import { type CityDocument } from "../../models/city";
 import logger from "../../utils/logger";
-// AzubiB2B sync intentionally not called from cascade delete/restore —
-// only direct job/company creation is synced to AzubiB2B.
 
 export class CityService {
   private buildQrCode(qrTargetUrl: string) {

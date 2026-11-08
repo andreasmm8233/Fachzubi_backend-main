@@ -6,9 +6,6 @@ import ObjectIdConverter from "../../utils/objectIdConvertor";
 import { CompanyImageHandler } from "../../utils/companyImageHandler";
 import { type EmployerBodyPaylaodFrontend } from "./employer.types";
 import { type Appoinment } from "src/models/appoinment";
-// Only company creation is synced to AzubiB2B; update/delete sync is disabled.
-// import { syncDeleteCompanyToAzubi } from "../../utils/syncToAzubi";
-import { syncCompanyToAzubi } from "../../utils/syncToAzubi";
 class EmployerController {
   private readonly employerService: EmployerService;
   private readonly fileHandler: FileHandler;
@@ -73,6 +70,40 @@ class EmployerController {
     }
   };
 
+  public downloadEmployerQrCode = async (req: Request, res: Response) => {
+    try {
+      const { id } = req.params;
+      const employer = await this.employerService.getEmployerQrService(id);
+      if (!employer?.qrCode) {
+        res.sendNotFound404Response("Employer not found", null);
+        return;
+      }
+
+      const qrResponse = await fetch(employer.qrCode);
+      if (!qrResponse.ok) {
+        res.sendErrorResponse("Failed to fetch QR code image", null);
+        return;
+      }
+
+      const imageBuffer = Buffer.from(await qrResponse.arrayBuffer());
+      const companySlug = (employer.companyName ?? "")
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+
+      res.setHeader("Content-Type", "image/png");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename=\"company-${companySlug || id}-qr.png\"`,
+      );
+      res.send(imageBuffer);
+    } catch (error) {
+      logger.error("downloadEmployerQrCode", error);
+      res.sendErrorResponse("Error downloading company QR code", error);
+    }
+  };
+
   public updateEmployerById = async (req: Request, res: Response) => {
     try {
       const companyImages = req.files?.companyImages;
@@ -126,7 +157,6 @@ class EmployerController {
           updatedEmployer._id,
         );
       }
-      syncCompanyToAzubi(updatedEmployer); // fire-and-forget
       res.sendSuccess200Response(
         "Employer updated successfully",
         updatedEmployer,
@@ -142,8 +172,6 @@ class EmployerController {
       if (id) {
         const deletedEmployer =
           await this.employerService.deleteEmployerByIdService(id as string);
-        // AzubiB2B sync disabled for deletes — only company creation is synced.
-        // syncDeleteCompanyToAzubi(id as string); // fire-and-forget
         res.sendSuccess200Response(
           "Employer marked as deleted successfully",
           deletedEmployer,
@@ -218,7 +246,6 @@ class EmployerController {
           newEmployer._id,
         );
       }
-      syncCompanyToAzubi(newEmployer); // fire-and-forget, user block nahi hoga
       res.sendCreated201Response("Employer added successfully", newEmployer);
     } catch (error) {
       res.sendErrorResponse("Error adding employer", error);

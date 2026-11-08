@@ -4,9 +4,6 @@ import logger from "../../utils/logger";
 import { FileHandler } from "../../utils/fileHandler";
 import { JobDocumentService } from "./job.documents.service";
 import { JobImageHandler } from "../../utils/jobsImageHandler";
-// Only job creation is synced to AzubiB2B; update/delete sync is disabled.
-// import { syncDeleteJobToAzubi } from "../../utils/syncToAzubi";
-import { syncJobToAzubi } from "../../utils/syncToAzubi";
 class JobController {
   private readonly jobService: JobService;
   private readonly fileHandler: FileHandler;
@@ -122,7 +119,6 @@ class JobController {
           : [req.body?.deletedAttachment];
         await this.jobDocumentService.deleteDocuments(deletedAttachments);
       }
-      syncJobToAzubi(updatedJob); // fire-and-forget
       res.sendSuccess200Response("Job updated successfully", updatedJob);
     } catch (error) {
       res.sendErrorResponse("Error updating job", error);
@@ -133,8 +129,6 @@ class JobController {
     try {
       const { id } = req.params;
       const deletedJob = await this.jobService.deleteJobByIdService(id);
-      // AzubiB2B sync disabled for deletes — only job creation is synced.
-      // syncDeleteJobToAzubi(id); // fire-and-forget
       res.sendSuccess200Response(
         "Job marked as deleted successfully",
         deletedJob,
@@ -222,7 +216,6 @@ class JobController {
       }
       await this.jobDocumentService.addDocuments(attachments, newJob._id);
 
-      syncJobToAzubi(newJob); // fire-and-forget
       res.sendCreated201Response("Job added successfully", newJob);
     } catch (error) {
       res.sendErrorResponse("Error adding job", error);

@@ -16,6 +16,8 @@ export interface Employer {
   city?: mongoose.Schema.Types.ObjectId;
   status?: boolean;
   isDeleted?: boolean;
+  qrCode?: string;
+  qrTargetUrl?: string;
   createdBy?: Schema.Types.ObjectId;
   createdByModel?: "User" | "Employee";
   // region?: Schema.Types.ObjectId; // REGION FEATURE DISABLED
@@ -56,6 +58,8 @@ const employerSchema = new Schema<EmployerDocument>(
     },
     status: { type: Boolean, default: true },
     isDeleted: { type: Boolean, default: true },
+    qrCode: { type: String, required: false },
+    qrTargetUrl: { type: String, required: false },
     createdByModel: {
       type: String,
       enum: ["User", "Employee"],
