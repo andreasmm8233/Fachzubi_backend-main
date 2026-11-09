@@ -8,6 +8,14 @@ export interface ManageContent {
   heading: string;
   subHeading: string;
   bottomBarText: string;
+  // Homepage city search card
+  searchTitle?: string;
+  searchSubtitle?: string;
+  // Banners of the public companies/jobs pages
+  companiesHeading?: string;
+  companiesSubHeading?: string;
+  jobsHeading?: string;
+  jobsSubHeading?: string;
 }
 
 export interface ManageContentDocument extends ManageContent, Document {
@@ -24,6 +32,12 @@ const manageContentSchema = new Schema<ManageContentDocument>(
     heading: { type: String, required: true },
     subHeading: { type: String, required: true },
     bottomBarText: { type: String, required: true },
+    searchTitle: { type: String, required: false },
+    searchSubtitle: { type: String, required: false },
+    companiesHeading: { type: String, required: false },
+    companiesSubHeading: { type: String, required: false },
+    jobsHeading: { type: String, required: false },
+    jobsSubHeading: { type: String, required: false },
   },
   {
     timestamps: true,
