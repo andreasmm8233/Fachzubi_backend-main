@@ -2,6 +2,7 @@ import ObjectIdConverter from "../../utils/objectIdConvertor";
 import {
   appoinmentModel,
   cityModel,
+  companyDocumentModel,
   companyImageModel,
   employerModel,
   industriesModel,
@@ -162,6 +163,7 @@ export class EmployerService {
   public async getEmployerByIdService(id: string) {
     const objectId = this.objectIdConverter.convertToObjectId(id);
     let images;
+    let documents;
     const employerDetail = await employerModel
       .findById(id)
       .populate("industryName", "industryName")
@@ -208,8 +210,35 @@ export class EmployerService {
           },
         },
       ]);
+      documents = await this.getCompanyDocuments(objectId);
     }
-    return { employerDetail, images };
+    return { employerDetail, images, documents };
+  }
+
+  // Documents of a company, oldest first: [{ documentId, fileName, path, type }]
+  private async getCompanyDocuments(companyId: any) {
+    return await companyDocumentModel.aggregate([
+      { $match: { companyId } },
+      { $sort: { createdAt: 1 } },
+      {
+        $lookup: {
+          from: mediaModel.collection.name,
+          localField: "documentId",
+          foreignField: "_id",
+          as: "media",
+        },
+      },
+      { $unwind: "$media" },
+      {
+        $project: {
+          _id: 0,
+          documentId: "$media._id",
+          fileName: "$media.fileName",
+          path: "$media.filepath",
+          type: "$media.type",
+        },
+      },
+    ]);
   }
 
   public async getEmployerQrService(id: string) {
@@ -691,6 +720,11 @@ export class EmployerService {
         },
       },
     ]);
+    if (companyDetail) {
+      companyDetail.companyDocuments = await this.getCompanyDocuments(
+        companyDetail._id,
+      );
+    }
     return companyDetail;
   }
 
@@ -980,6 +1014,7 @@ export class EmployerService {
   public async hardDeleteEmployerByIdService(id: string) {
     const objectId = this.objectIdConverter.convertToObjectId(id);
     await jobModel.deleteMany({ company: objectId, isDeleted: true });
+    await companyDocumentModel.deleteMany({ companyId: objectId });
     return await employerModel.findByIdAndDelete(objectId);
   }
 }

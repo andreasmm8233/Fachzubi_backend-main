@@ -4,6 +4,7 @@ import { FileHandler } from "../../utils/fileHandler";
 import logger from "../../utils/logger";
 import ObjectIdConverter from "../../utils/objectIdConvertor";
 import { CompanyImageHandler } from "../../utils/companyImageHandler";
+import { CompanyDocumentHandler } from "../../utils/companyDocumentHandler";
 import { type EmployerBodyPaylaodFrontend } from "./employer.types";
 import { type Appoinment } from "src/models/appoinment";
 class EmployerController {
@@ -11,11 +12,13 @@ class EmployerController {
   private readonly fileHandler: FileHandler;
   private readonly objectIdConverter: ObjectIdConverter;
   private readonly companyImageHandler: CompanyImageHandler;
+  private readonly companyDocumentHandler: CompanyDocumentHandler;
   constructor() {
     this.employerService = new EmployerService();
     this.fileHandler = new FileHandler();
     this.objectIdConverter = new ObjectIdConverter();
     this.companyImageHandler = new CompanyImageHandler();
+    this.companyDocumentHandler = new CompanyDocumentHandler();
   }
 
   /**
@@ -60,6 +63,7 @@ class EmployerController {
       const newPayloadForFrontend = {
         data: employer.employerDetail,
         images: employer.images,
+        documents: employer.documents,
       };
       res.sendSuccess200Response(
         "Employer retrieved successfully",
@@ -155,6 +159,10 @@ class EmployerController {
           companyImages as any[],
           removedFile,
           updatedEmployer._id,
+        );        await this.companyDocumentHandler.saveDocuments(
+          req.files?.companyDocuments ?? req.files?.["companyDocuments[]"],
+          req.body.removedDocuments ?? req.body["removedDocuments[]"],
+          updatedEmployer._id,
         );
       }
       res.sendSuccess200Response(
@@ -243,6 +251,10 @@ class EmployerController {
         await this.companyImageHandler.saveFileAndCreateMedia(
           companyImages as any[],
           removedFile,
+          newEmployer._id,
+        );        await this.companyDocumentHandler.saveDocuments(
+          req.files?.["companyDocuments[]"] ?? req.files?.companyDocuments,
+          undefined,
           newEmployer._id,
         );
       }
