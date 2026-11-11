@@ -11,6 +11,7 @@ import jobTypesRoute from "../module/job.type.template/job.types.route";
 import employeeRoute from "../module/manage.employee.template/manage.employee.route";
 import regionRoute from "../module/region.template/region.routes";
 import contactRoute from "../module/contact.template/contact.routes";
+import pricingRoute from "../module/pricing.template/pricing.routes";
 
 const router = [
   {
@@ -61,6 +62,10 @@ const router = [
   {
     prefix: "/contact",
     router: contactRoute,
+  },
+  {
+    prefix: "/pricing",
+    router: pricingRoute,
   },
 ];
 
