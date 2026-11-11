@@ -8,4 +8,7 @@ export const pricingPlanValidator = Joi.object({
   features: Joi.array().items(Joi.string().trim().max(300)).default([]),
   sortOrder: Joi.number().integer().default(0),
   highlighted: Joi.boolean().default(false),
+  priceNote: Joi.string().trim().max(200).allow("").optional(),
+  buttonText: Joi.string().trim().max(100).allow("").optional(),
+  badgeText: Joi.string().trim().max(60).allow("").optional(),
 });

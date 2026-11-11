@@ -10,6 +10,10 @@ export interface PricingPlan {
   sortOrder: number;
   // Shown with a "Beliebt" badge on the website
   highlighted: boolean;
+  // Optional texts: note under the price, button label, badge of a highlighted plan
+  priceNote?: string;
+  buttonText?: string;
+  badgeText?: string;
 }
 
 export interface PricingPlanDocument extends PricingPlan, Document {
@@ -26,6 +30,9 @@ const pricingPlanSchema = new Schema<PricingPlanDocument>(
     features: { type: [{ type: String }], default: [] },
     sortOrder: { type: Number, default: 0 },
     highlighted: { type: Boolean, default: false },
+    priceNote: { type: String, required: false },
+    buttonText: { type: String, required: false },
+    badgeText: { type: String, required: false },
   },
   {
     timestamps: true,

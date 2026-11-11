@@ -3,8 +3,18 @@ import { PricingService } from "./pricing.service";
 import logger from "../../utils/logger";
 
 const pickPlan = (body: any) => {
-  const { name, description, price, duration, features, sortOrder, highlighted } =
-    body;
+  const {
+    name,
+    description,
+    price,
+    duration,
+    features,
+    sortOrder,
+    highlighted,
+    priceNote,
+    buttonText,
+    badgeText,
+  } = body;
   return {
     name,
     description,
@@ -13,6 +23,9 @@ const pickPlan = (body: any) => {
     features,
     sortOrder,
     highlighted: Boolean(highlighted),
+    priceNote,
+    buttonText,
+    badgeText,
   };
 };
 
