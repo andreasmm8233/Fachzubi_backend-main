@@ -74,6 +74,8 @@ app.use("/api/v1/employer", authMiddleware.requirePermission("manage_employers")
 app.use("/api/v1/industries", authMiddleware.requirePermission("manage_industries"));
 app.use("/api/v1/job-type", authMiddleware.requirePermission("job_types"));
 app.use("/api/v1/manage_content", authMiddleware.requirePermission("manage_content"));
+// Contact form messages are managed together with the CMS content
+app.use("/api/v1/contact", authMiddleware.requirePermission("manage_content"));
 
 // routes
 router.forEach((route) => {

@@ -16,6 +16,14 @@ export interface ManageContent {
   companiesSubHeading?: string;
   jobsHeading?: string;
   jobsSubHeading?: string;
+  // Contact page (/kontakt)
+  contactHeading?: string;
+  contactDescription?: string;
+  contactCardTitle?: string;
+  contactPhone?: string;
+  contactTiming?: string;
+  contactEmail?: string;
+  contactFormText?: string;
 }
 
 export interface ManageContentDocument extends ManageContent, Document {
@@ -38,6 +46,13 @@ const manageContentSchema = new Schema<ManageContentDocument>(
     companiesSubHeading: { type: String, required: false },
     jobsHeading: { type: String, required: false },
     jobsSubHeading: { type: String, required: false },
+    contactHeading: { type: String, required: false },
+    contactDescription: { type: String, required: false },
+    contactCardTitle: { type: String, required: false },
+    contactPhone: { type: String, required: false },
+    contactTiming: { type: String, required: false },
+    contactEmail: { type: String, required: false },
+    contactFormText: { type: String, required: false },
   },
   {
     timestamps: true,

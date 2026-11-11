@@ -10,6 +10,7 @@ import manageKeyRoute from "../module/manage.key.template/manageKey.route";
 import jobTypesRoute from "../module/job.type.template/job.types.route";
 import employeeRoute from "../module/manage.employee.template/manage.employee.route";
 import regionRoute from "../module/region.template/region.routes";
+import contactRoute from "../module/contact.template/contact.routes";
 
 const router = [
   {
@@ -56,6 +57,10 @@ const router = [
   {
     prefix: "/employees",
     router: employeeRoute,
+  },
+  {
+    prefix: "/contact",
+    router: contactRoute,
   },
 ];
 
