@@ -77,6 +77,8 @@ app.use("/api/v1/manage_content", authMiddleware.requirePermission("manage_conte
 // Contact form messages are managed together with the CMS content
 app.use("/api/v1/contact", authMiddleware.requirePermission("manage_content"));
 app.use("/api/v1/pricing", authMiddleware.requirePermission("manage_content"));
+// Newsletter subscribers + newsletter text are managed with the CMS content
+app.use("/api/v1/newsletter", authMiddleware.requirePermission("manage_content"));
 
 // routes
 router.forEach((route) => {

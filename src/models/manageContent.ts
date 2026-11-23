@@ -27,6 +27,9 @@ export interface ManageContent {
   // Pricing page (/preise)
   pricingHeading?: string;
   pricingDescription?: string;
+  // Newsletter sign-up box
+  newsletterText?: string;
+  newsletterNote?: string;
 }
 
 export interface ManageContentDocument extends ManageContent, Document {
@@ -58,6 +61,8 @@ const manageContentSchema = new Schema<ManageContentDocument>(
     contactFormText: { type: String, required: false },
     pricingHeading: { type: String, required: false },
     pricingDescription: { type: String, required: false },
+    newsletterText: { type: String, required: false },
+    newsletterNote: { type: String, required: false },
   },
   {
     timestamps: true,

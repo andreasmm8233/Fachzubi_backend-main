@@ -20,6 +20,7 @@ import EmployeeSessionModel from "./employee.session";
 import RegionModel from "./region";
 import ContactQueryModel from "./contactQuery";
 import PricingPlanModel from "./pricingPlan";
+import NewsletterSubscriberModel from "./newsletterSubscriber";
 
 export const userSessionModel = UserSessionModel;
 export const userModel = UserModel;
@@ -43,3 +44,4 @@ export const employeeSessionModel = EmployeeSessionModel;
 export const regionModel = RegionModel;
 export const contactQueryModel = ContactQueryModel;
 export const pricingPlanModel = PricingPlanModel;
+export const newsletterSubscriberModel = NewsletterSubscriberModel;
